@@ -1,0 +1,27 @@
+flowchart LR
+%% Ravenbrook (Mechanical)
+classDef elec stroke-width:2px,stroke:#6b5cff,fill:#efefff;
+classDef mech stroke-width:2px,stroke:#1b7f2a,fill:#eefaf0;
+classDef data stroke-width:2px,stroke:#0b6a8b,fill:#eaf7fb;
+classDef ctrl stroke-width:2px,stroke:#b26b00,fill:#fff5e6;
+classDef safe stroke-width:2px,stroke:#b00020,fill:#fdecef;
+subgraph SITE["Ravenbrook Site (site)"]
+subgraph BLD_MCC["MCC Room (room)"]
+subgraph CAB_PLC["PLC Cabinet A (cabinet)"]
+end
+end
+subgraph BLD_PROC["Process Hall (building)"]
+P1["Centrifugal Pump P1 (55kW)<br/>[pump/mechanical]<br/>flow:180<br/>head:45<br/>material:SS316"]
+class P1 mech;
+V1["Gate Valve V1 (DN100)<br/>[valve/mechanical]<br/>dn:100<br/>material:SS316"]
+class V1 mech;
+end
+subgraph YARD_TANK["Tank Farm (area)"]
+T1["Raw Water Tank T1 (50 m3)<br/>[tank/mechanical]<br/>volume:50<br/>material:CS<br/>rating:2"]
+class T1 mech;
+end
+end
+T1 -- "pipe:Outlet→Port A (material:SS316, dn_mm:100, schedule:SCH40, length_m:8, service:RawWater, pressure_bar:6)" --> V1
+V1 -- "pipe:Port B→Suction (material:SS316, dn_mm:100, schedule:SCH40, length_m:12, service:RawWater)" --> P1
+linkStyle 0 stroke:#2563eb,stroke-width:2px,color:#2563eb
+linkStyle 1 stroke:#2563eb,stroke-width:2px,color:#2563eb

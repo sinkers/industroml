@@ -1,0 +1,159 @@
+{
+  "id": "SITE",
+  "name": "Ravenbrook Site",
+  "type": "site",
+  "assets": [],
+  "children": [
+    {
+      "id": "BLD-MCC",
+      "name": "MCC Room",
+      "type": "room",
+      "assets": [
+        {
+          "id": "TX1",
+          "name": "Transformer 11kV/415V 1000kVA",
+          "domain": "electrical",
+          "kind": "transformer",
+          "interfaces": [
+            "TX1.HV",
+            "TX1.LV"
+          ]
+        },
+        {
+          "id": "MSB1",
+          "name": "Main Switchboard 1600A",
+          "domain": "electrical",
+          "kind": "switchboard",
+          "interfaces": [
+            "MSB1.IN",
+            "MSB1.FEED-MCC1"
+          ]
+        },
+        {
+          "id": "MCC1",
+          "name": "MCC Section 630A",
+          "domain": "electrical",
+          "kind": "mcc",
+          "interfaces": [
+            "MCC1.IN",
+            "MCC1.FEED-VFD"
+          ]
+        },
+        {
+          "id": "VFD-P1",
+          "name": "VFD for Pump P1 (55kW)",
+          "domain": "electrical",
+          "kind": "vfd",
+          "interfaces": [
+            "VFD-P1.IN",
+            "VFD-P1.MOTOR",
+            "VFD-P1.ETH"
+          ]
+        },
+        {
+          "id": "SW1",
+          "name": "Core Switch SW1",
+          "domain": "data",
+          "kind": "ethernet_switch",
+          "interfaces": [
+            "SW1.UPLINK",
+            "SW1.PORT5"
+          ]
+        },
+        {
+          "id": "FW1",
+          "name": "Firewall FW1",
+          "domain": "data",
+          "kind": "firewall",
+          "interfaces": [
+            "FW1.LAN"
+          ]
+        }
+      ],
+      "children": [
+        {
+          "id": "CAB-PLC",
+          "name": "PLC Cabinet A",
+          "type": "cabinet",
+          "assets": [
+            {
+              "id": "PLC1",
+              "name": "PLC CPU",
+              "domain": "control",
+              "kind": "plc",
+              "interfaces": [
+                "PLC1.ETH",
+                "PLC1.DI1"
+              ]
+            },
+            {
+              "id": "ADC1",
+              "name": "Analog Input Module (8ch)",
+              "domain": "control",
+              "kind": "adc",
+              "interfaces": [
+                "ADC1.AI1"
+              ]
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "BLD-PROC",
+      "name": "Process Hall",
+      "type": "building",
+      "assets": [
+        {
+          "id": "P1",
+          "name": "Centrifugal Pump P1 (55kW)",
+          "domain": "mechanical",
+          "kind": "pump",
+          "interfaces": [
+            "P1.MOTOR",
+            "P1.SUCTION",
+            "P1.DISCH"
+          ]
+        },
+        {
+          "id": "V1",
+          "name": "Gate Valve V1 (DN100)",
+          "domain": "mechanical",
+          "kind": "valve",
+          "interfaces": [
+            "V1.PORTA",
+            "V1.PORTB"
+          ]
+        },
+        {
+          "id": "FT101",
+          "name": "Flow Transmitter FT-101",
+          "domain": "control",
+          "kind": "sensor",
+          "interfaces": [
+            "FT101.AO"
+          ]
+        }
+      ],
+      "children": []
+    },
+    {
+      "id": "YARD-TANK",
+      "name": "Tank Farm",
+      "type": "area",
+      "assets": [
+        {
+          "id": "T1",
+          "name": "Raw Water Tank T1 (50 m3)",
+          "domain": "mechanical",
+          "kind": "tank",
+          "interfaces": [
+            "T1.OUTLET"
+          ]
+        }
+      ],
+      "children": []
+    }
+  ]
+}

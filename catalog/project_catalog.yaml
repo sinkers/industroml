@@ -1,0 +1,35 @@
+meta:
+  format: IndustrialML-ProjectCatalog
+  version: "0.1"
+  name: Water Plant (Typical)
+  based_on: catalog/master_catalog.yaml
+
+elements:
+  - { domain: electrical, kind: transformer }
+  - { domain: electrical, kind: acb_breaker }
+  - { domain: electrical, kind: switchboard }
+  - { domain: electrical, kind: mcc }
+  - { domain: electrical, kind: capacitor_bank }
+  - { domain: electrical, kind: vfd }
+  - { domain: electrical, kind: motor }
+  - { domain: mechanical, kind: pump }
+  - { domain: mechanical, kind: valve_gate }
+  - { domain: mechanical, kind: valve_check }
+  - { domain: mechanical, kind: valve_control }
+  - { domain: mechanical, kind: strainer_y }
+  - { domain: mechanical, kind: heat_exchanger_shell_tube }
+  - { domain: mechanical, kind: tank }
+  - { domain: control, kind: plc }
+  - { domain: control, kind: di_module }
+  - { domain: control, kind: do_module }
+  - { domain: control, kind: adc }
+  - { domain: control, kind: dac }
+  - { domain: control, kind: flow_transmitter }
+  - { domain: control, kind: pressure_transmitter }
+  - { domain: control, kind: temperature_transmitter }
+  - { domain: control, kind: level_transmitter }
+  - { domain: data, kind: ethernet_switch_l3 }
+  - { domain: data, kind: firewall }
+  - { domain: data, kind: router }
+  - { domain: data, kind: nas }
+

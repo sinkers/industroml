@@ -1,0 +1,33 @@
+flowchart LR
+%% Ravenbrook (Electrical)
+classDef elec stroke-width:2px,stroke:#6b5cff,fill:#efefff;
+classDef mech stroke-width:2px,stroke:#1b7f2a,fill:#eefaf0;
+classDef data stroke-width:2px,stroke:#0b6a8b,fill:#eaf7fb;
+classDef ctrl stroke-width:2px,stroke:#b26b00,fill:#fff5e6;
+classDef safe stroke-width:2px,stroke:#b00020,fill:#fdecef;
+subgraph SITE["Ravenbrook Site (site)"]
+subgraph BLD_MCC["MCC Room (room)"]
+TX1["Transformer 11kV/415V 1000kVA<br/>[transformer/electrical]<br/>power:1000"]
+class TX1 elec;
+MSB1["Main Switchboard 1600A<br/>[switchboard/electrical]<br/>voltage:415<br/>current:1600<br/>switching:['isolation', 'load-break']"]
+class MSB1 elec;
+MCC1["MCC Section 630A<br/>[mcc/electrical]<br/>voltage:415<br/>current:630"]
+class MCC1 elec;
+VFD_P1["VFD for Pump P1 (55kW)<br/>[vfd/electrical]<br/>voltage:415<br/>power:55"]
+class VFD_P1 elec;
+subgraph CAB_PLC["PLC Cabinet A (cabinet)"]
+end
+end
+subgraph BLD_PROC["Process Hall (building)"]
+end
+subgraph YARD_TANK["Tank Farm (area)"]
+end
+end
+TX1 -- "cable:LV Secondary→Incomer (csa_mm2:240, cores:4, insulation:XLPE, length_m:20, method:tray)" --> MSB1
+MSB1 -- "cable:Feeder to MCC1→Incomer (csa_mm2:185, cores:4, insulation:XLPE, length_m:15, method:tray)" --> MCC1
+MCC1 -- "cable:Feeder to VFD-P1→Outgoing (csa_mm2:50, cores:4, insulation:XLPE, length_m:3)" --> BRK_VFD1
+BRK_VFD1 -- "cable:Outgoing→Power In (csa_mm2:50, cores:4, insulation:XLPE, length_m:2)" --> VFD_P1
+linkStyle 0 stroke:#111827,stroke-width:2px,color:#111827
+linkStyle 1 stroke:#111827,stroke-width:2px,color:#111827
+linkStyle 2 stroke:#111827,stroke-width:2px,color:#111827
+linkStyle 3 stroke:#111827,stroke-width:2px,color:#111827

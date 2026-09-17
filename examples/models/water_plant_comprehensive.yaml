@@ -1,0 +1,142 @@
+meta:
+  format: IndustroML
+  version: "0.1"
+  site_name: Comprehensive Water/Wastewater Plant
+
+containers:
+  - { id: SITE, name: Main Site, type: site }
+  - { id: BLD-SUB, name: HV Substation, type: building, parent: SITE }
+  - { id: BLD-MCC, name: LV Switchroom, type: room, parent: SITE }
+  - { id: BLD-PROC, name: Process Hall, type: building, parent: SITE }
+  - { id: YARD-TANK, name: Tank Farm, type: area, parent: SITE }
+  - { id: CAB-PLC, name: PLC Room, type: room, parent: BLD-PROC }
+  - { id: RACK-IT, name: IT Rack, type: rack, parent: BLD-MCC }
+
+assets:
+  # Electrical HV to LV
+  - { id: TX1, name: Transformer 11kV/415V 1MVA, domain: electrical, kind: transformer, container: BLD-SUB, attributes: { primary_voltage_v: 11000, secondary_voltage_v: 415, power_kva: 1000 } }
+  - { id: ACB-IN, name: ACB Incomer, domain: electrical, kind: acb_breaker, container: BLD-MCC, attributes: { rating_a: 3200, breaking_capacity_ka: 65 } }
+  - { id: MSB1, name: Main Switchboard MSB-1, domain: electrical, kind: switchboard, container: BLD-MCC, attributes: { voltage_v: 415, current_a: 1600 } }
+  - { id: MCC1, name: MCC-1, domain: electrical, kind: mcc, container: BLD-MCC, attributes: { voltage_v: 415, current_a: 630 } }
+  - { id: PFC1, name: PFC Capacitor Bank, domain: electrical, kind: capacitor_bank, container: BLD-MCC, attributes: { kvar: 200, steps: 8 } }
+  - { id: ATS1, name: ATS, domain: electrical, kind: automatic_transfer_switch, container: BLD-MCC }
+  - { id: GEN1, name: Standby Generator, domain: electrical, kind: generator, container: BLD-MCC }
+
+  # Drives and motors
+  - { id: VFD-P1, name: VFD for Pump P1, domain: electrical, kind: vfd, container: MCC1, attributes: { power_kw: 55, voltage_v: 415 } }
+  - { id: MTR-P1, name: Motor for Pump P1, domain: electrical, kind: motor, container: BLD-PROC, attributes: { power_kw: 55, voltage_v: 415 } }
+
+  # Process equipment
+  - { id: P1, name: High-Lift Pump P1, domain: mechanical, kind: pump, container: BLD-PROC, attributes: { flow_m3h: 180, head_m: 45, material: SS316 } }
+  - { id: YS1, name: Y-Strainer, domain: mechanical, kind: strainer_y, container: BLD-PROC, attributes: { mesh_micron: 200 } }
+  - { id: GV1, name: Gate Valve GV-1, domain: mechanical, kind: valve_gate, container: BLD-PROC, attributes: { dn_mm: 150, material: SS316 } }
+  - { id: CV1, name: Check Valve CV-1, domain: mechanical, kind: valve_check, container: BLD-PROC, attributes: { dn_mm: 150, material: SS316 } }
+  - { id: FCV1, name: Flow Control Valve FCV-1, domain: mechanical, kind: valve_control, container: BLD-PROC, attributes: { action: air_to_close, cv: 80 } }
+  - { id: HX1, name: Heat Exchanger HX-1, domain: mechanical, kind: heat_exchanger_shell_tube, container: BLD-PROC }
+  - { id: TK1, name: Raw Water Tank TK-1, domain: mechanical, kind: tank, container: YARD-TANK, attributes: { volume_m3: 200, material: CS, rating_pressure_bar: 2 } }
+
+  # Instrumentation
+  - { id: FT101, name: Flow Transmitter FT-101, domain: control, kind: flow_transmitter, container: BLD-PROC, attributes: { signal: 4-20mA, range: "0-400 m3/h" } }
+  - { id: PT101, name: Pressure Transmitter PT-101, domain: control, kind: pressure_transmitter, container: BLD-PROC, attributes: { signal: 4-20mA, range: "0-16 bar" } }
+  - { id: TT101, name: Temperature Transmitter TT-101, domain: control, kind: temperature_transmitter, container: BLD-PROC, attributes: { signal: 4-20mA, range: "0-120 C" } }
+  - { id: LT101, name: Level Transmitter LT-101, domain: control, kind: level_transmitter, container: YARD-TANK, attributes: { signal: 4-20mA, range: "0-8 m" } }
+
+  # Control system
+  - { id: PLC1, name: PLC CPU, domain: control, kind: plc, container: CAB-PLC, attributes: { slots: 8 } }
+  - { id: DI1, name: DI Module, domain: control, kind: di_module, container: CAB-PLC, attributes: { channels: 16 } }
+  - { id: DO1, name: DO Module, domain: control, kind: do_module, container: CAB-PLC, attributes: { channels: 16, type: relay } }
+  - { id: AI1, name: AI Module, domain: control, kind: adc, container: CAB-PLC, attributes: { channels: 8, range: 4-20mA } }
+  - { id: AO1, name: AO Module, domain: control, kind: dac, container: CAB-PLC, attributes: { channels: 4, range: 4-20mA } }
+  - { id: HMI1, name: HMI Panel, domain: control, kind: hmi_panel, container: CAB-PLC }
+  - { id: SCADA1, name: SCADA Server, domain: control, kind: scada_server, container: RACK-IT }
+
+  # Data network
+  - { id: SW1, name: Core Switch, domain: data, kind: ethernet_switch_l3, container: RACK-IT, attributes: { ports: 24, routing: static } }
+  - { id: FW1, name: Firewall, domain: data, kind: firewall, container: RACK-IT }
+  - { id: RTR1, name: Router, domain: data, kind: router, container: RACK-IT }
+  - { id: NAS1, name: NAS, domain: data, kind: nas, container: RACK-IT }
+
+  # Safety
+  - { id: FACP1, name: Fire Alarm Panel, domain: safety, kind: fire_alarm_panel, container: BLD-PROC }
+  - { id: SD1, name: Smoke Detector SD-1, domain: safety, kind: smoke_detector, container: BLD-PROC }
+  - { id: MCP1, name: Manual Call Point MCP-1, domain: safety, kind: manual_call_point, container: BLD-PROC }
+
+interfaces:
+  # Electrical interfaces
+  - { id: TX1.HV, asset: TX1, name: HV Primary, domain: electrical, medium: ac_hv_3ph }
+  - { id: TX1.LV, asset: TX1, name: LV Secondary, domain: electrical, medium: ac_lv_3ph }
+  - { id: ACB-IN.LINE, asset: ACB-IN, name: Line, domain: electrical, medium: ac_lv_3ph }
+  - { id: ACB-IN.LOAD, asset: ACB-IN, name: Load, domain: electrical, medium: ac_lv_3ph }
+  - { id: MSB1.IN, asset: MSB1, name: Incomer, domain: electrical, medium: ac_lv_3ph }
+  - { id: MSB1.OUT-MCC1, asset: MSB1, name: Feeder to MCC1, domain: electrical, medium: ac_lv_3ph }
+  - { id: MCC1.IN, asset: MCC1, name: Incomer, domain: electrical, medium: ac_lv_3ph }
+  - { id: MCC1.OUT-VFD, asset: MCC1, name: Feeder to VFD-P1, domain: electrical, medium: ac_lv_3ph }
+  - { id: VFD-P1.IN, asset: VFD-P1, name: Power In, domain: electrical, medium: ac_lv_3ph }
+  - { id: VFD-P1.MOTOR, asset: VFD-P1, name: Motor Out, domain: electrical, medium: ac_lv_3ph }
+  - { id: MTR-P1.TERM, asset: MTR-P1, name: Terminals, domain: electrical, medium: ac_lv_3ph }
+
+  # Mechanical interfaces
+  - { id: TK1.OUT, asset: TK1, name: Outlet, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: YS1.IN, asset: YS1, name: Inlet, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: YS1.OUT, asset: YS1, name: Outlet, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: GV1.A, asset: GV1, name: Port A, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: GV1.B, asset: GV1, name: Port B, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: P1.SUC, asset: P1, name: Suction, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: P1.DIS, asset: P1, name: Discharge, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: CV1.A, asset: CV1, name: Port A, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: CV1.B, asset: CV1, name: Port B, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: FCV1.A, asset: FCV1, name: Port A, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: FCV1.B, asset: FCV1, name: Port B, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: HX1.IN, asset: HX1, name: Inlet, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+  - { id: HX1.OUT, asset: HX1, name: Outlet, domain: mechanical, medium: pipe_flanged, attributes: { dn_mm: 150 } }
+
+  # Control/data interfaces
+  - { id: VFD-P1.ETH, asset: VFD-P1, name: Ethernet, domain: data, medium: ethernet_rj45, attributes: { protocol: ModbusTCP } }
+  - { id: PLC1.ETH, asset: PLC1, name: Ethernet, domain: data, medium: ethernet_rj45 }
+  - { id: SCADA1.ETH, asset: SCADA1, name: Ethernet, domain: data, medium: ethernet_rj45 }
+  - { id: SW1.UPLINK, asset: SW1, name: Uplink, domain: data, medium: ethernet_rj45 }
+  - { id: SW1.SW-PLC, asset: SW1, name: To PLC, domain: data, medium: ethernet_rj45 }
+  - { id: SW1.SW-VFD, asset: SW1, name: To VFD, domain: data, medium: ethernet_rj45 }
+  - { id: FW1.LAN, asset: FW1, name: LAN, domain: data, medium: ethernet_rj45 }
+  - { id: RTR1.LAN, asset: RTR1, name: LAN, domain: data, medium: ethernet_rj45 }
+  - { id: NAS1.LAN, asset: NAS1, name: LAN, domain: data, medium: ethernet_rj45 }
+
+  - { id: PLC1.DI1, asset: PLC1, name: DI1, domain: control, medium: di_dry }
+  - { id: PLC1.AI1, asset: PLC1, name: AI1, domain: control, medium: ai_4_20mA }
+  - { id: PLC1.AO1, asset: PLC1, name: AO1, domain: control, medium: ao_4_20mA }
+  - { id: FT101.AO, asset: FT101, name: Analog Out, domain: control, medium: ai_4_20mA }
+  - { id: PT101.AO, asset: PT101, name: Analog Out, domain: control, medium: ai_4_20mA }
+  - { id: TT101.AO, asset: TT101, name: Analog Out, domain: control, medium: ai_4_20mA }
+  - { id: LT101.AO, asset: LT101, name: Analog Out, domain: control, medium: ai_4_20mA }
+
+connections:
+  # Electrical power path
+  - { id: C-TX-ACB, type: cable, from: TX1.HV, to: ACB-IN.LINE, attributes: { csa_mm2: 95, cores: 3, insulation: XLPE, length_m: 20, method: trench } }
+  - { id: C-ACB-MSB, type: cable, from: ACB-IN.LOAD, to: MSB1.IN, attributes: { csa_mm2: 240, cores: 4, insulation: XLPE, length_m: 10, method: tray } }
+  - { id: C-MSB-MCC, type: cable, from: MSB1.OUT-MCC1, to: MCC1.IN, attributes: { csa_mm2: 185, cores: 4, insulation: XLPE, length_m: 15, method: tray } }
+  - { id: C-MCC-VFD, type: cable, from: MCC1.OUT-VFD, to: VFD-P1.IN, attributes: { csa_mm2: 50, cores: 4, insulation: XLPE, length_m: 5 } }
+  - { id: C-VFD-MTR, type: cable, from: VFD-P1.MOTOR, to: MTR-P1.TERM, attributes: { csa_mm2: 25, cores: 4, insulation: XLPE, length_m: 18 } }
+
+  # Mechanical process path
+  - { id: P-TK-YS, type: pipe, from: TK1.OUT, to: YS1.IN, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 8, service: RawWater } }
+  - { id: P-YS-GV, type: pipe, from: YS1.OUT, to: GV1.A, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 2, service: RawWater } }
+  - { id: P-GV-P1SUC, type: pipe, from: GV1.B, to: P1.SUC, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 6, service: RawWater } }
+  - { id: P-P1DIS-CV, type: pipe, from: P1.DIS, to: CV1.A, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 5, service: RawWater } }
+  - { id: P-CV-FCV, type: pipe, from: CV1.B, to: FCV1.A, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 3, service: RawWater } }
+  - { id: P-FCV-HX, type: pipe, from: FCV1.B, to: HX1.IN, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 10, service: RawWater } }
+  - { id: P-HX-OUT, type: pipe, from: HX1.OUT, to: TK1.OUT, attributes: { material: SS316, dn_mm: 150, schedule: SCH40, length_m: 12, service: TreatedWater } }
+
+  # Instrumentation to PLC
+  - { id: IO-FT-PLC, type: io_link, from: FT101.AO, to: PLC1.AI1, attributes: { signal: 4-20mA } }
+  - { id: IO-PT-PLC, type: io_link, from: PT101.AO, to: PLC1.AI1, attributes: { signal: 4-20mA } }
+  - { id: IO-TT-PLC, type: io_link, from: TT101.AO, to: PLC1.AI1, attributes: { signal: 4-20mA } }
+  - { id: IO-LT-PLC, type: io_link, from: LT101.AO, to: PLC1.AI1, attributes: { signal: 4-20mA } }
+
+  # Data network & control comms
+  - { id: D-SW-FW, type: data_link, from: SW1.UPLINK, to: FW1.LAN, attributes: { medium: copper, category: Cat6, speed_mbps: 1000 } }
+  - { id: D-FW-RTR, type: data_link, from: FW1.LAN, to: RTR1.LAN, attributes: { medium: copper, category: Cat6, speed_mbps: 1000 } }
+  - { id: D-SW-PLC, type: data_link, from: SW1.SW-PLC, to: PLC1.ETH, attributes: { medium: copper, category: Cat6, speed_mbps: 100 } }
+  - { id: D-SW-VFD, type: data_link, from: SW1.SW-VFD, to: VFD-P1.ETH, attributes: { medium: copper, category: Cat6, protocol: ModbusTCP, speed_mbps: 100 } }
+  - { id: D-SW-SCADA, type: data_link, from: SW1.UPLINK, to: SCADA1.ETH, attributes: { medium: copper, category: Cat6, speed_mbps: 1000 } }
+  - { id: D-SW-NAS, type: data_link, from: SW1.UPLINK, to: NAS1.LAN, attributes: { medium: copper, category: Cat6, speed_mbps: 1000 } }
+

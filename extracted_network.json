@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "format": "IndustroML",
+    "version": "0.1",
+    "site_name": "Provided network diagram (low-resolution)",
+    "notes": [
+      "The uploaded image resolution is too low to reliably read device labels, model numbers, VLAN/zone names, or port annotations. Please provide a higher-resolution image (or cropped sections) to extract exact identifiers and specifications."
+    ],
+    "source_file": "network.pdf",
+    "extraction_timestamp": "1756438322.5668087"
+  },
+  "containers": [],
+  "assets": [],
+  "interfaces": [],
+  "connections": []
+}

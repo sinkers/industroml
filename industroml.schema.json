@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/industroml.schema.json",
+  "title": "IndustroML",
+  "description": "Schema for IndustroML v0.1 - cross-domain industrial site modeling",
+  "type": "object",
+  "required": ["meta", "containers", "assets", "interfaces", "connections"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["format", "version"],
+      "additionalProperties": true,
+      "properties": {
+        "format": { "const": "IndustroML" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "units": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "site_name": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "containers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/container" }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "interfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/interface" }
+    },
+    "connections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/connection" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Stable identifier; may include dot for interface scoping (e.g., ASSET.PORT)"
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["electrical", "mechanical", "data", "control", "safety"]
+    },
+    "containerType": {
+      "type": "string",
+      "enum": ["site", "building", "room", "area", "skid", "cabinet", "rack", "tray", "pipe_rack", "conduit"]
+    },
+    "assetKind": {
+      "type": "string",
+      "enum": [
+        "transformer","switchboard","mcc","breaker","fuse","isolator","vfd","motor","ups","generator",
+        "acb_breaker","mccb_breaker","mcb_breaker","contactor","automatic_transfer_switch","capacitor_bank",
+        "surge_protector","current_transformer","voltage_transformer","energy_meter","power_meter",
+        "busbar_section","distribution_board","panelboard","soft_starter","earthing_switch","protection_relay",
+        "pump","pump_positive_displacement","tank","pressure_vessel","vessel_horizontal","heat_exchanger",
+        "heat_exchanger_shell_tube","heat_exchanger_plate","valve","valve_gate","valve_globe","valve_ball",
+        "valve_butterfly","valve_check","valve_control","filter","filter_bag","strainer_y","strainer_basket",
+        "compressor","compressor_screw","compressor_reciprocating","pressure_relief_valve","rupture_disc",
+        "orifice_plate","venturi_tube","flow_nozzle","pressure_gauge","temperature_indicator",
+        "ethernet_switch","ethernet_switch_l3","ethernet_switch_unmanaged","poe_switch","router","firewall",
+        "access_point","server","nas","workstation","historian_server","ntp_server","industrial_gateway",
+        "serial_ethernet_converter","lte_modem","vpn_appliance",
+        "plc","rtu","pac","remote_io","adc","dac","di_module","do_module","pid_controller","hmi_panel",
+        "scada_server","sensor","flow_transmitter","pressure_transmitter","temperature_transmitter",
+        "level_transmitter","proximity_sensor","limit_switch","actuator","positioner","solenoid_valve",
+        "control_valve_actuator",
+        "estop","safety_relay","light_curtain","gas_detector","fire_alarm_panel","smoke_detector",
+        "heat_detector","horn_strobe","manual_call_point","safety_plc","interlock_switch"
+      ]
+    },
+    "medium": {
+      "type": "string",
+      "enum": [
+        "ac_lv_3ph","ac_lv_1ph","ac_hv_3ph","dc_lv",
+        "pipe_flanged","pipe_welded",
+        "ethernet_rj45","ethernet_fiber","serial_rs485",
+        "di_dry","do_relay","ai_4_20mA","ao_4_20mA"
+      ]
+    },
+    "connectionType": {
+      "type": "string",
+      "enum": ["cable","pipe","data_link","io_link"]
+    },
+    "referenceAttributes": {
+      "type": "object",
+      "description": "Common reference attributes for tracking manufacturer information",
+      "additionalProperties": true,
+      "properties": {
+        "manufacturer": {
+          "type": "string",
+          "description": "Equipment manufacturer name"
+        },
+        "model": {
+          "type": "string", 
+          "description": "Equipment model number or designation"
+        },
+        "serial_number": {
+          "type": "string",
+          "description": "Unique serial number or asset tag"
+        }
+      }
+    },
+    "extendedAttributes": {
+      "type": "object",
+      "description": "Attributes object that includes common reference attributes plus custom fields",
+      "allOf": [
+        { "$ref": "#/$defs/referenceAttributes" },
+        { "type": "object", "additionalProperties": true }
+      ]
+    },
+    "container": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "type": { "$ref": "#/$defs/containerType" },
+        "parent": { "$ref": "#/$defs/id" },
+        "attributes": { "$ref": "#/$defs/extendedAttributes" }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id","name","domain","kind","container"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "domain": { "$ref": "#/$defs/domain" },
+        "kind": { "$ref": "#/$defs/assetKind" },
+        "container": { "$ref": "#/$defs/id" },
+        "attributes": { "$ref": "#/$defs/extendedAttributes" },
+        "labels": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "required": ["id","asset","domain","medium"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "asset": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "domain": { "$ref": "#/$defs/domain" },
+        "medium": { "$ref": "#/$defs/medium" },
+        "attributes": { "$ref": "#/$defs/extendedAttributes" }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "required": ["id","type","from","to"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "$ref": "#/$defs/connectionType" },
+        "from": { "$ref": "#/$defs/id", "description": "Interface ID (e.g., ASSET.PORT)" },
+        "to": { "$ref": "#/$defs/id", "description": "Interface ID (e.g., ASSET.PORT)" },
+        "attributes": { "$ref": "#/$defs/extendedAttributes" },
+        "route": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" },
+          "description": "Optional waypoints: trays, conduits, racks"
+        }
+      }
+    }
+  }
+}

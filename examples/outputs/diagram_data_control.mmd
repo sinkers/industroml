@@ -1,0 +1,33 @@
+flowchart LR
+%% Ravenbrook (Data+Control)
+classDef elec stroke-width:2px,stroke:#6b5cff,fill:#efefff;
+classDef mech stroke-width:2px,stroke:#1b7f2a,fill:#eefaf0;
+classDef data stroke-width:2px,stroke:#0b6a8b,fill:#eaf7fb;
+classDef ctrl stroke-width:2px,stroke:#b26b00,fill:#fff5e6;
+classDef safe stroke-width:2px,stroke:#b00020,fill:#fdecef;
+subgraph SITE["Ravenbrook Site (site)"]
+subgraph BLD_MCC["MCC Room (room)"]
+SW1["Core Switch SW1<br/>[ethernet_switch/data]<br/>speed_gbps:1<br/>ports:24"]
+class SW1 data;
+FW1["Firewall FW1<br/>[firewall/data]<br/>interfaces:4"]
+class FW1 data;
+subgraph CAB_PLC["PLC Cabinet A (cabinet)"]
+PLC1["PLC CPU<br/>[plc/control]<br/>slots:8"]
+class PLC1 ctrl;
+ADC1["Analog Input Module (8ch)<br/>[adc/control]<br/>channels:8"]
+class ADC1 ctrl;
+end
+end
+subgraph BLD_PROC["Process Hall (building)"]
+FT101["Flow Transmitter FT-101<br/>[sensor/control]"]
+class FT101 ctrl;
+end
+subgraph YARD_TANK["Tank Farm (area)"]
+end
+end
+SW1 -- "data_link:Uplink→LAN (medium:copper, category:Cat6, speed_mbps:1000, vlan:10)" --> FW1
+SW1 -- "data_link:Port 5→Ethernet (medium:copper, category:Cat6, speed_mbps:1000, vlan:20)" --> PLC1
+FT101 -- "io_link:Analog Out→AI1 (signal:4-20mA, range:0-200 m3/h)" --> ADC1
+linkStyle 0 stroke:#059669,stroke-width:2px,color:#059669
+linkStyle 1 stroke:#059669,stroke-width:2px,color:#059669
+linkStyle 2 stroke:#059669,stroke-width:2px,color:#059669

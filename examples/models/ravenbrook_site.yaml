@@ -1,0 +1,445 @@
+meta:
+  format: IndustroML
+  version: "0.1"
+  units:
+    length: m
+    diameter: mm
+    pressure: bar
+    voltage: V
+    current: A
+    power: kW
+  site_name: Ravenbrook Water Plant
+
+containers:
+  - id: SITE
+    name: Ravenbrook Site
+    type: site
+  - id: BLD-MCC
+    name: MCC Room
+    type: room
+    parent: SITE
+  - id: BLD-PROC
+    name: Process Hall
+    type: building
+    parent: SITE
+  - id: YARD-TANK
+    name: Tank Farm
+    type: area
+    parent: SITE
+  - id: CAB-PLC
+    name: PLC Cabinet A
+    type: cabinet
+    parent: BLD-MCC
+
+assets:
+  - id: TX1
+    name: Transformer 11kV/415V 1000kVA
+    domain: electrical
+    kind: transformer
+    container: BLD-MCC
+    attributes:
+      primary_voltage_v: 11000
+      secondary_voltage_v: 415
+      power_kva: 1000
+  - id: MSB1
+    name: Main Switchboard 1600A
+    domain: electrical
+    kind: switchboard
+    container: BLD-MCC
+    attributes:
+      voltage_v: 415
+      current_a: 1600
+      switching: [isolation, load-break]
+  - id: MCC1
+    name: MCC Section 630A
+    domain: electrical
+    kind: mcc
+    container: BLD-MCC
+    attributes:
+      voltage_v: 415
+      current_a: 630
+  - id: VFD-P1
+    name: VFD for Pump P1 (55kW)
+    domain: electrical
+    kind: vfd
+    container: BLD-MCC
+    attributes:
+      voltage_v: 415
+      power_kw: 55
+  - id: P1
+    name: Centrifugal Pump P1 (55kW)
+    domain: mechanical
+    kind: pump
+    container: BLD-PROC
+    attributes:
+      flow_m3h: 180
+      head_m: 45
+      material: SS316
+  - id: T1
+    name: Raw Water Tank T1 (50 m3)
+    domain: mechanical
+    kind: tank
+    container: YARD-TANK
+    attributes:
+      volume_m3: 50
+      material: CS
+      rating_pressure_bar: 2
+  - id: V1
+    name: Gate Valve V1 (DN100)
+    domain: mechanical
+    kind: valve
+    container: BLD-PROC
+    attributes:
+      valve_type: gate
+      dn_mm: 100
+      material: SS316
+  - id: SW1
+    name: Core Switch SW1
+    domain: data
+    kind: ethernet_switch
+    container: BLD-MCC
+    attributes:
+      ports: 24
+      speed_gbps: 1
+  - id: FW1
+    name: Firewall FW1
+    domain: data
+    kind: firewall
+    container: BLD-MCC
+    attributes:
+      interfaces: 4
+  - id: PLC1
+    name: PLC CPU
+    domain: control
+    kind: plc
+    container: CAB-PLC
+    attributes:
+      slots: 8
+  - id: ADC1
+    name: Analog Input Module (8ch)
+    domain: control
+    kind: adc
+    container: CAB-PLC
+    attributes:
+      channels: 8
+      range: 4-20mA
+  - id: FT101
+    name: Flow Transmitter FT-101
+    domain: control
+    kind: sensor
+    container: BLD-PROC
+    attributes:
+      signal: 4-20mA
+      service: Raw Water
+  - id: BRK-VFD1
+    name: MCC Feeder Breaker to VFD-P1
+    domain: electrical
+    kind: breaker
+    container: MCC1
+    attributes:
+      rating_a: 125
+      curve: C
+      breaking_capacity_ka: 25
+
+interfaces:
+  - id: TX1.HV
+    asset: TX1
+    name: HV Primary
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 11000
+  - id: TX1.LV
+    asset: TX1
+    name: LV Secondary
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+      current_a: 1390
+
+  - id: MSB1.IN
+    asset: MSB1
+    name: Incomer
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+  - id: MSB1.FEED-MCC1
+    asset: MSB1
+    name: Feeder to MCC1
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+      current_a: 800
+
+  - id: MCC1.IN
+    asset: MCC1
+    name: Incomer
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+  - id: MCC1.FEED-VFD
+    asset: MCC1
+    name: Feeder to VFD-P1
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+      current_a: 125
+
+  - id: BRK-VFD1.OUT
+    asset: BRK-VFD1
+    name: Outgoing
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+      current_a: 125
+  - id: BRK-VFD1.AUX
+    asset: BRK-VFD1
+    name: Aux Contact
+    domain: control
+    medium: di_dry
+
+  - id: VFD-P1.IN
+    asset: VFD-P1
+    name: Power In
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+      current_a: 125
+  - id: VFD-P1.MOTOR
+    asset: VFD-P1
+    name: Motor Out
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+      current_a: 100
+  - id: VFD-P1.ETH
+    asset: VFD-P1
+    name: Ethernet
+    domain: data
+    medium: ethernet_rj45
+    attributes:
+      protocol: ModbusTCP
+
+  - id: P1.MOTOR
+    asset: P1
+    name: Motor Terminals
+    domain: electrical
+    medium: ac_lv_3ph
+    attributes:
+      voltage_v: 415
+  - id: P1.SUCTION
+    asset: P1
+    name: Suction
+    domain: mechanical
+    medium: pipe_flanged
+    attributes:
+      dn_mm: 100
+  - id: P1.DISCH
+    asset: P1
+    name: Discharge
+    domain: mechanical
+    medium: pipe_flanged
+    attributes:
+      dn_mm: 100
+
+  - id: T1.OUTLET
+    asset: T1
+    name: Outlet
+    domain: mechanical
+    medium: pipe_flanged
+    attributes:
+      dn_mm: 100
+
+  - id: V1.PORTA
+    asset: V1
+    name: Port A
+    domain: mechanical
+    medium: pipe_flanged
+    attributes:
+      dn_mm: 100
+  - id: V1.PORTB
+    asset: V1
+    name: Port B
+    domain: mechanical
+    medium: pipe_flanged
+    attributes:
+      dn_mm: 100
+
+  - id: SW1.UPLINK
+    asset: SW1
+    name: Uplink
+    domain: data
+    medium: ethernet_rj45
+    attributes:
+      speed_mbps: 1000
+  - id: SW1.PORT5
+    asset: SW1
+    name: Port 5
+    domain: data
+    medium: ethernet_rj45
+  - id: FW1.LAN
+    asset: FW1
+    name: LAN
+    domain: data
+    medium: ethernet_rj45
+
+  - id: PLC1.ETH
+    asset: PLC1
+    name: Ethernet
+    domain: data
+    medium: ethernet_rj45
+  - id: PLC1.DI1
+    asset: PLC1
+    name: DI1
+    domain: control
+    medium: di_dry
+  - id: ADC1.AI1
+    asset: ADC1
+    name: AI1
+    domain: control
+    medium: ai_4_20mA
+  - id: FT101.AO
+    asset: FT101
+    name: Analog Out
+    domain: control
+    medium: ai_4_20mA
+
+connections:
+  - id: C-TX1-MSB1
+    type: cable
+    from: TX1.LV
+    to: MSB1.IN
+    attributes:
+      csa_mm2: 240
+      cores: 4
+      insulation: XLPE
+      length_m: 20
+      method: tray
+
+  - id: C-MSB1-MCC1
+    type: cable
+    from: MSB1.FEED-MCC1
+    to: MCC1.IN
+    attributes:
+      csa_mm2: 185
+      cores: 4
+      insulation: XLPE
+      length_m: 15
+      method: tray
+
+  - id: C-MCC1-BRK
+    type: cable
+    from: MCC1.FEED-VFD
+    to: BRK-VFD1.OUT
+    attributes:
+      csa_mm2: 50
+      cores: 4
+      insulation: XLPE
+      length_m: 3
+
+  - id: C-BRK-VFD
+    type: cable
+    from: BRK-VFD1.OUT
+    to: VFD-P1.IN
+    attributes:
+      csa_mm2: 50
+      cores: 4
+      insulation: XLPE
+      length_m: 2
+      protective_device_asset_id: BRK-VFD1
+
+  - id: C-VFD-MOTOR
+    type: cable
+    from: VFD-P1.MOTOR
+    to: P1.MOTOR
+    attributes:
+      csa_mm2: 25
+      cores: 4
+      insulation: XLPE
+      length_m: 12
+
+  - id: P-T1-V1
+    type: pipe
+    from: T1.OUTLET
+    to: V1.PORTA
+    attributes:
+      material: SS316
+      dn_mm: 100
+      schedule: SCH40
+      length_m: 8
+      pressure_bar: 6
+      service: RawWater
+
+  - id: P-V1-P1SUC
+    type: pipe
+    from: V1.PORTB
+    to: P1.SUCTION
+    attributes:
+      material: SS316
+      dn_mm: 100
+      schedule: SCH40
+      length_m: 12
+      valves: [V1]
+      service: RawWater
+
+  - id: P-P1DISCH-TO-PROC
+    type: pipe
+    from: P1.DISCH
+    to: FT101.AO
+    attributes:
+      note: Physical proximity; signal taps on discharge line
+      dn_mm: 100
+
+  - id: D-SW1-FW1
+    type: data_link
+    from: SW1.UPLINK
+    to: FW1.LAN
+    attributes:
+      medium: copper
+      category: Cat6
+      speed_mbps: 1000
+      vlan: 10
+
+  - id: D-SW1-PLC
+    type: data_link
+    from: SW1.PORT5
+    to: PLC1.ETH
+    attributes:
+      medium: copper
+      category: Cat6
+      speed_mbps: 1000
+      vlan: 20
+
+  - id: D-SW1-VFD
+    type: data_link
+    from: SW1.PORT5
+    to: VFD-P1.ETH
+    attributes:
+      medium: copper
+      category: Cat6
+      protocol: ModbusTCP
+      speed_mbps: 100
+
+  - id: IO-BRK-AUX-PLC
+    type: io_link
+    from: BRK-VFD1.AUX
+    to: PLC1.DI1
+    attributes:
+      signal: dry_contact
+      logic: "NO"
+
+  - id: IO-FT101-ADC1
+    type: io_link
+    from: FT101.AO
+    to: ADC1.AI1
+    attributes:
+      signal: 4-20mA
+      range: 0-200 m3/h

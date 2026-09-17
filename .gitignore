@@ -1,0 +1,32 @@
+# Secrets. This repository is public; .env holds API keys.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# macOS
+.DS_Store
+
+# Agent-local settings
+.claude/settings.local.json
+
+# Source material, excluded wholesale because this repository is public and the
+# directory mixes three things that must not be republished:
+#   - 507 files scraped from a P&ID symbol site (someone else's copyright)
+#   - as-built electrical drawings for the George Town site (confidential)
+#   - extracted topology for DAME's own network and a real project P&ID
+# The code needs none of it. The README links the public symbol sources instead.
+reference/

@@ -1,0 +1,45 @@
+meta:
+  format: IndustrialML-IconMap
+  version: "0.1"
+  notes: |
+    Maps logical icon keys used in the master catalog to concrete SVG files
+    under catalog/icons/. Projects and renderers can override this mapping.
+
+icons:
+  sld:transformer: catalog/icons/electrical/transformer.svg
+  sld:switchboard: catalog/icons/electrical/switchboard.svg
+  sld:mcc: catalog/icons/electrical/switchboard.svg
+  sld:breaker: catalog/icons/electrical/breaker.svg
+  sld:fuse: catalog/icons/electrical/breaker.svg
+  sld:isolator: catalog/icons/electrical/isolator.svg
+  sld:vfd: catalog/icons/electrical/vfd.svg
+  sld:motor: catalog/icons/electrical/motor.svg
+  sld:ups: catalog/icons/electrical/ups.svg
+  sld:generator: catalog/icons/electrical/generator.svg
+
+  pid:pump: catalog/icons/mechanical/pump.svg
+  pid:valve: catalog/icons/mechanical/valve.svg
+  pid:tank: catalog/icons/mechanical/tank.svg
+  pid:heat_exchanger: catalog/icons/mechanical/heat_exchanger.svg
+  pid:filter: catalog/icons/mechanical/filter.svg
+  pid:compressor: catalog/icons/mechanical/compressor.svg
+  pid:psv: catalog/icons/mechanical/psv.svg
+
+  net:switch: catalog/icons/data/switch.svg
+  net:router: catalog/icons/data/router.svg
+  net:firewall: catalog/icons/data/firewall.svg
+  net:ap: catalog/icons/data/ap.svg
+  net:server: catalog/icons/data/server.svg
+
+  ctrl:plc: catalog/icons/control/plc.svg
+  ctrl:remote_io: catalog/icons/control/remote_io.svg
+  ctrl:adc: catalog/icons/control/ai_module.svg
+  ctrl:dac: catalog/icons/control/ao_module.svg
+  ctrl:sensor: catalog/icons/control/sensor.svg
+  ctrl:actuator: catalog/icons/control/actuator.svg
+
+  safe:estop: catalog/icons/safety/estop.svg
+  safe:relay: catalog/icons/safety/relay.svg
+  safe:light_curtain: catalog/icons/safety/light_curtain.svg
+  safe:gas_detector: catalog/icons/safety/gas_detector.svg
+

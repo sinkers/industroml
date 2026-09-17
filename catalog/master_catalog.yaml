@@ -1,0 +1,771 @@
+meta:
+  format: IndustrialML-Catalog
+  version: "0.1"
+  notes: |
+    Master catalogue of base element and connector types for IndustrialML.
+    Each element defines domain, kind, a human label, a suggested icon key,
+    default attributes, and typical interfaces. Projects derive a subset into
+    a project catalogue for authoring.
+
+icons:
+  # Icon keys are opaque identifiers that a renderer/editor can map to SVGs.
+  # Suggested families based on README references:
+  # - sld:*         (electrical single-line)
+  # - pid:*         (mechanical P&ID)
+  # - net:*         (networking)
+  # - ctrl:*        (control/instrumentation)
+  sld:transformer: {}
+  sld:switchboard: {}
+  sld:mcc: {}
+  sld:breaker: {}
+  sld:fuse: {}
+  sld:isolator: {}
+  sld:vfd: {}
+  sld:motor: {}
+  sld:ups: {}
+  sld:generator: {}
+  pid:pump: {}
+  pid:valve: {}
+  pid:tank: {}
+  pid:heat_exchanger: {}
+  pid:filter: {}
+  pid:compressor: {}
+  pid:psv: {}
+  net:switch: {}
+  net:router: {}
+  net:firewall: {}
+  net:ap: {}
+  net:server: {}
+  ctrl:plc: {}
+  ctrl:remote_io: {}
+  ctrl:adc: {}
+  ctrl:dac: {}
+  ctrl:sensor: {}
+  ctrl:actuator: {}
+  safe:estop: {}
+  safe:relay: {}
+  safe:light_curtain: {}
+  safe:gas_detector: {}
+
+mediums:
+  electrical:
+    - ac_lv_3ph
+    - ac_lv_1ph
+    - ac_hv_3ph
+    - dc_lv
+  mechanical:
+    - pipe_flanged
+    - pipe_welded
+  data:
+    - ethernet_rj45
+    - ethernet_fiber
+    - serial_rs485
+  control:
+    - di_dry
+    - do_relay
+    - ai_4_20mA
+    - ao_4_20mA
+
+connectors:
+  # Standardized connector types and their typical attribute fields and color schema
+  - type: low_voltage
+    label: Low-Voltage Electrical
+    color: "#111827"   # black
+    attributes:
+      - csa_mm2
+      - cores
+      - insulation
+      - length_m
+      - method
+  - type: high_voltage
+    label: High-Voltage Electrical
+    color: "#dc2626"   # red
+    attributes:
+      - csa_mm2
+      - cores
+      - insulation
+      - length_m
+      - method
+  - type: data
+    label: Data / Communications
+    color: "#059669"   # green
+    attributes:
+      - medium
+      - category
+      - protocol
+      - speed_mbps
+      - vlan
+  - type: fluid
+    label: Mechanical / Fluid
+    color: "#2563eb"   # blue
+    attributes:
+      - material
+      - dn_mm
+      - schedule
+      - length_m
+      - service
+      - pressure_bar
+
+elements:
+  # ELECTRICAL
+  - domain: electrical
+    kind: transformer
+    label: Transformer
+    icon: sld:transformer
+    default_attributes:
+      primary_voltage_v: 11000
+      secondary_voltage_v: 415
+      power_kva: 1000
+    default_interfaces:
+      - name: HV Primary
+        domain: electrical
+        medium: ac_hv_3ph
+      - name: LV Secondary
+        domain: electrical
+        medium: ac_lv_3ph
+  - domain: electrical
+    kind: switchboard
+    label: Switchboard
+    icon: sld:switchboard
+    default_attributes:
+      voltage_v: 415
+      current_a: 1600
+      switching: [isolation, load-break]
+    default_interfaces:
+      - name: Incomer
+        domain: electrical
+        medium: ac_lv_3ph
+  - domain: electrical
+    kind: mcc
+    label: Motor Control Centre (MCC)
+    icon: sld:mcc
+    default_attributes:
+      voltage_v: 415
+      current_a: 630
+    default_interfaces:
+      - name: Incomer
+        domain: electrical
+        medium: ac_lv_3ph
+  - domain: electrical
+    kind: breaker
+    label: Circuit Breaker
+    icon: sld:breaker
+    default_attributes:
+      rating_a: 125
+      curve: C
+      breaking_capacity_ka: 25
+    default_interfaces:
+      - name: Outgoing
+        domain: electrical
+        medium: ac_lv_3ph
+  - domain: electrical
+    kind: fuse
+    label: Fuse
+    icon: sld:fuse
+    default_attributes:
+      rating_a: 63
+      type: gG
+  - domain: electrical
+    kind: isolator
+    label: Isolator Switch
+    icon: sld:isolator
+    default_attributes:
+      rating_a: 125
+  - domain: electrical
+    kind: vfd
+    label: Variable Frequency Drive
+    icon: sld:vfd
+    default_attributes:
+      power_kw: 22
+      voltage_v: 415
+    default_interfaces:
+      - name: Power In
+        domain: electrical
+        medium: ac_lv_3ph
+      - name: Motor Out
+        domain: electrical
+        medium: ac_lv_3ph
+      - name: Ethernet
+        domain: data
+        medium: ethernet_rj45
+  - domain: electrical
+    kind: motor
+    label: Electric Motor
+    icon: sld:motor
+    default_attributes:
+      power_kw: 7.5
+      voltage_v: 415
+    default_interfaces:
+      - name: Terminals
+        domain: electrical
+        medium: ac_lv_3ph
+  - domain: electrical
+    kind: ups
+    label: UPS
+    icon: sld:ups
+  - domain: electrical
+    kind: generator
+    label: Generator
+    icon: sld:generator
+
+  # MECHANICAL (P&ID)
+  - domain: mechanical
+    kind: pump
+    label: Pump (Centrifugal)
+    icon: pid:pump
+    default_attributes:
+      flow_m3h: 100
+      head_m: 30
+      material: CS
+    default_interfaces:
+      - name: Suction
+        domain: mechanical
+        medium: pipe_flanged
+      - name: Discharge
+        domain: mechanical
+        medium: pipe_flanged
+  - domain: mechanical
+    kind: valve
+    label: Valve (Generic)
+    icon: pid:valve
+    default_attributes:
+      valve_type: gate
+      dn_mm: 100
+      material: CS
+    default_interfaces:
+      - name: Port A
+        domain: mechanical
+        medium: pipe_flanged
+      - name: Port B
+        domain: mechanical
+        medium: pipe_flanged
+  - domain: mechanical
+    kind: tank
+    label: Tank (Vertical)
+    icon: pid:tank
+    default_attributes:
+      volume_m3: 10
+      rating_pressure_bar: 2
+      material: CS
+    default_interfaces:
+      - name: Outlet
+        domain: mechanical
+        medium: pipe_flanged
+  - domain: mechanical
+    kind: heat_exchanger
+    label: Heat Exchanger
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: filter
+    label: Filter (Cartridge)
+    icon: pid:filter
+  - domain: mechanical
+    kind: compressor
+    label: Compressor
+    icon: pid:compressor
+  - domain: mechanical
+    kind: pressure_relief_valve
+    label: Pressure Safety Valve (PSV)
+    icon: pid:psv
+
+  # DATA / NETWORK
+  - domain: data
+    kind: ethernet_switch
+    label: Ethernet Switch
+    icon: net:switch
+    default_attributes:
+      ports: 24
+      speed_gbps: 1
+    default_interfaces:
+      - name: Uplink
+        domain: data
+        medium: ethernet_rj45
+  - domain: data
+    kind: router
+    label: Router
+    icon: net:router
+  - domain: data
+    kind: firewall
+    label: Firewall
+    icon: net:firewall
+  - domain: data
+    kind: access_point
+    label: Access Point
+    icon: net:ap
+  - domain: data
+    kind: server
+    label: Server
+    icon: net:server
+
+  # CONTROL / INSTRUMENTATION
+  - domain: control
+    kind: plc
+    label: PLC CPU
+    icon: ctrl:plc
+    default_attributes:
+      slots: 8
+    default_interfaces:
+      - name: Ethernet
+        domain: data
+        medium: ethernet_rj45
+      - name: DI1
+        domain: control
+        medium: di_dry
+  - domain: control
+    kind: remote_io
+    label: Remote I/O
+    icon: ctrl:remote_io
+  - domain: control
+    kind: adc
+    label: Analog Input (AI)
+    icon: ctrl:adc
+    default_attributes:
+      channels: 8
+      range: 4-20mA
+    default_interfaces:
+      - name: AI1
+        domain: control
+        medium: ai_4_20mA
+  - domain: control
+    kind: dac
+    label: Analog Output (AO)
+    icon: ctrl:dac
+    default_attributes:
+      channels: 4
+      range: 4-20mA
+    default_interfaces:
+      - name: AO1
+        domain: control
+        medium: ao_4_20mA
+  - domain: control
+    kind: sensor
+    label: Sensor (Generic)
+    icon: ctrl:sensor
+    default_attributes:
+      signal: 4-20mA
+      service: Process
+    default_interfaces:
+      - name: Analog Out
+        domain: control
+        medium: ai_4_20mA
+  - domain: control
+    kind: actuator
+    label: Actuator (Valve)
+    icon: ctrl:actuator
+
+  # SAFETY
+  - domain: safety
+    kind: estop
+    label: Emergency Stop
+    icon: safe:estop
+  - domain: safety
+    kind: safety_relay
+    label: Safety Relay
+    icon: safe:relay
+  - domain: safety
+    kind: light_curtain
+    label: Light Curtain
+    icon: safe:light_curtain
+  - domain: safety
+    kind: gas_detector
+    label: Gas Detector
+    icon: safe:gas_detector
+
+  # ELECTRICAL — Extended
+  - domain: electrical
+    kind: acb_breaker
+    label: Air Circuit Breaker (ACB)
+    icon: sld:breaker
+    default_attributes:
+      rating_a: 3200
+      breaking_capacity_ka: 65
+      poles: 3
+    default_interfaces:
+      - { name: Line, domain: electrical, medium: ac_lv_3ph }
+      - { name: Load, domain: electrical, medium: ac_lv_3ph }
+  - domain: electrical
+    kind: mccb_breaker
+    label: Moulded Case Circuit Breaker (MCCB)
+    icon: sld:breaker
+    default_attributes:
+      rating_a: 400
+      breaking_capacity_ka: 25
+      poles: 3
+      curve: C
+  - domain: electrical
+    kind: mcb_breaker
+    label: Miniature Circuit Breaker (MCB)
+    icon: sld:breaker
+    default_attributes:
+      rating_a: 32
+      poles: 1
+      curve: C
+  - domain: electrical
+    kind: contactor
+    label: Contactor
+    icon: sld:breaker
+    default_attributes:
+      rating_a: 40
+      coil_v: 230
+  - domain: electrical
+    kind: automatic_transfer_switch
+    label: Automatic Transfer Switch (ATS)
+    icon: sld:switchboard
+  - domain: electrical
+    kind: capacitor_bank
+    label: Capacitor Bank (PFC)
+    icon: sld:switchboard
+    default_attributes:
+      kvar: 100
+      steps: 6
+  - domain: electrical
+    kind: surge_protector
+    label: Surge Protective Device (SPD)
+    icon: sld:breaker
+    default_attributes:
+      class: II
+      voltage_v: 415
+  - domain: electrical
+    kind: current_transformer
+    label: Current Transformer (CT)
+    icon: sld:transformer
+    default_attributes:
+      ratio: "100/5"
+      class: 1
+  - domain: electrical
+    kind: voltage_transformer
+    label: Voltage Transformer (VT)
+    icon: sld:transformer
+    default_attributes:
+      ratio: "11000/110"
+      class: 1
+  - domain: electrical
+    kind: energy_meter
+    label: Energy Meter
+    icon: sld:switchboard
+    default_attributes:
+      phases: 3
+      protocol: ModbusRTU
+  - domain: electrical
+    kind: power_meter
+    label: Power Meter
+    icon: sld:switchboard
+    default_attributes:
+      phases: 3
+      protocol: ModbusTCP
+  - domain: electrical
+    kind: busbar_section
+    label: Busbar Section
+    icon: sld:switchboard
+  - domain: electrical
+    kind: distribution_board
+    label: Distribution Board (DB)
+    icon: sld:switchboard
+  - domain: electrical
+    kind: panelboard
+    label: Panelboard
+    icon: sld:switchboard
+  - domain: electrical
+    kind: soft_starter
+    label: Soft Starter
+    icon: sld:vfd
+    default_attributes:
+      power_kw: 22
+      voltage_v: 415
+  - domain: electrical
+    kind: earthing_switch
+    label: Earthing Switch
+    icon: sld:isolator
+  - domain: electrical
+    kind: protection_relay
+    label: Protection Relay
+    icon: sld:switchboard
+    default_attributes:
+      functions: [50, 51, 50N, 51N]
+
+  # MECHANICAL — Extended
+  - domain: mechanical
+    kind: pump_positive_displacement
+    label: Pump (Positive Displacement)
+    icon: pid:pump
+    default_attributes:
+      flow_m3h: 20
+      differential_pressure_bar: 5
+      material: SS316
+  - domain: mechanical
+    kind: compressor_screw
+    label: Compressor (Screw)
+    icon: pid:compressor
+  - domain: mechanical
+    kind: compressor_reciprocating
+    label: Compressor (Reciprocating)
+    icon: pid:compressor
+  - domain: mechanical
+    kind: heat_exchanger_shell_tube
+    label: Heat Exchanger (Shell & Tube)
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: heat_exchanger_plate
+    label: Heat Exchanger (Plate)
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: valve_gate
+    label: Gate Valve
+    icon: pid:valve
+    default_attributes:
+      dn_mm: 100
+      material: CS
+      end: flanged
+  - domain: mechanical
+    kind: valve_globe
+    label: Globe Valve
+    icon: pid:valve
+  - domain: mechanical
+    kind: valve_ball
+    label: Ball Valve
+    icon: pid:valve
+  - domain: mechanical
+    kind: valve_butterfly
+    label: Butterfly Valve
+    icon: pid:valve
+  - domain: mechanical
+    kind: valve_check
+    label: Check Valve
+    icon: pid:valve
+  - domain: mechanical
+    kind: valve_control
+    label: Control Valve
+    icon: pid:valve
+    default_attributes:
+      action: air_to_close
+      cv: 50
+  - domain: mechanical
+    kind: strainer_y
+    label: Y-Strainer
+    icon: pid:filter
+    default_attributes:
+      mesh_micron: 200
+  - domain: mechanical
+    kind: strainer_basket
+    label: Basket Strainer
+    icon: pid:filter
+  - domain: mechanical
+    kind: filter_bag
+    label: Bag Filter
+    icon: pid:filter
+  - domain: mechanical
+    kind: pressure_vessel
+    label: Pressure Vessel
+    icon: pid:tank
+    default_attributes:
+      design_pressure_bar: 10
+      volume_m3: 5
+  - domain: mechanical
+    kind: vessel_horizontal
+    label: Horizontal Vessel
+    icon: pid:tank
+  - domain: mechanical
+    kind: rupture_disc
+    label: Rupture Disc
+    icon: pid:psv
+    default_attributes:
+      burst_pressure_bar: 5
+  - domain: mechanical
+    kind: orifice_plate
+    label: Orifice Plate
+    icon: pid:filter
+  - domain: mechanical
+    kind: venturi_tube
+    label: Venturi Tube
+    icon: pid:filter
+  - domain: mechanical
+    kind: flow_nozzle
+    label: Flow Nozzle
+    icon: pid:filter
+  - domain: mechanical
+    kind: pressure_gauge
+    label: Pressure Gauge (PI)
+    icon: pid:filter
+  - domain: mechanical
+    kind: temperature_indicator
+    label: Temperature Indicator (TI)
+    icon: pid:filter
+
+  # DATA / NETWORK — Extended
+  - domain: data
+    kind: ethernet_switch_l3
+    label: Ethernet Switch (Layer 3)
+    icon: net:switch
+    default_attributes:
+      ports: 24
+      routing: static
+  - domain: data
+    kind: ethernet_switch_unmanaged
+    label: Ethernet Switch (Unmanaged)
+    icon: net:switch
+  - domain: data
+    kind: poe_switch
+    label: PoE Switch
+    icon: net:switch
+    default_attributes:
+      poe_budget_w: 370
+  - domain: data
+    kind: industrial_gateway
+    label: Industrial Gateway
+    icon: net:router
+    default_attributes:
+      protocols: [ModbusTCP, OPCUA]
+  - domain: data
+    kind: serial_ethernet_converter
+    label: Serial-to-Ethernet Converter
+    icon: net:router
+    default_attributes:
+      serial: RS485
+      protocol: ModbusRTU
+  - domain: data
+    kind: nas
+    label: NAS
+    icon: net:server
+  - domain: data
+    kind: workstation
+    label: Workstation/HMI Client
+    icon: net:server
+  - domain: data
+    kind: historian_server
+    label: Historian Server
+    icon: net:server
+  - domain: data
+    kind: ntp_server
+    label: Time Server (NTP)
+    icon: net:server
+  - domain: data
+    kind: lte_modem
+    label: LTE Modem
+    icon: net:router
+  - domain: data
+    kind: vpn_appliance
+    label: VPN Appliance
+    icon: net:router
+
+  # CONTROL / INSTRUMENTATION — Extended
+  - domain: control
+    kind: rtu
+    label: Remote Terminal Unit (RTU)
+    icon: ctrl:plc
+  - domain: control
+    kind: pac
+    label: Programmable Automation Controller (PAC)
+    icon: ctrl:plc
+  - domain: control
+    kind: di_module
+    label: Digital Input Module (DI)
+    icon: ctrl:remote_io
+    default_attributes:
+      channels: 16
+      signal: dry_contact
+  - domain: control
+    kind: do_module
+    label: Digital Output Module (DO)
+    icon: ctrl:remote_io
+    default_attributes:
+      channels: 16
+      type: relay
+  - domain: control
+    kind: pid_controller
+    label: PID Controller
+    icon: ctrl:plc
+  - domain: control
+    kind: hmi_panel
+    label: HMI Panel
+    icon: ctrl:plc
+  - domain: control
+    kind: scada_server
+    label: SCADA Server
+    icon: net:server
+  - domain: control
+    kind: flow_transmitter
+    label: Flow Transmitter (FT)
+    icon: ctrl:sensor
+    default_attributes:
+      signal: 4-20mA
+      range: "0-500 m3/h"
+  - domain: control
+    kind: pressure_transmitter
+    label: Pressure Transmitter (PT)
+    icon: ctrl:sensor
+    default_attributes:
+      signal: 4-20mA
+      range: "0-10 bar"
+  - domain: control
+    kind: temperature_transmitter
+    label: Temperature Transmitter (TT)
+    icon: ctrl:sensor
+    default_attributes:
+      signal: 4-20mA
+      range: "0-150 C"
+  - domain: control
+    kind: level_transmitter
+    label: Level Transmitter (LT)
+    icon: ctrl:sensor
+    default_attributes:
+      signal: 4-20mA
+      range: "0-5 m"
+  - domain: control
+    kind: positioner
+    label: Valve Positioner
+    icon: ctrl:actuator
+  - domain: control
+    kind: solenoid_valve
+    label: Solenoid Valve (SV)
+    icon: ctrl:actuator
+    default_attributes:
+      voltage_v: 24
+      type: NC
+  - domain: control
+    kind: control_valve_actuator
+    label: Control Valve Actuator
+    icon: ctrl:actuator
+    default_attributes:
+      action: air_to_close
+      signal: 4-20mA
+  - domain: control
+    kind: proximity_sensor
+    label: Proximity Sensor
+    icon: ctrl:sensor
+    default_attributes:
+      type: inductive
+      range_mm: 8
+  - domain: control
+    kind: limit_switch
+    label: Limit Switch
+    icon: ctrl:sensor
+
+  # SAFETY — Extended
+  - domain: safety
+    kind: fire_alarm_panel
+    label: Fire Alarm Control Panel (FACP)
+    icon: safe:relay
+  - domain: safety
+    kind: smoke_detector
+    label: Smoke Detector
+    icon: safe:gas_detector
+  - domain: safety
+    kind: heat_detector
+    label: Heat Detector
+    icon: safe:gas_detector
+  - domain: safety
+    kind: horn_strobe
+    label: Horn/Strobe
+    icon: safe:relay
+  - domain: safety
+    kind: manual_call_point
+    label: Manual Call Point (MCP)
+    icon: safe:relay
+  - domain: safety
+    kind: safety_plc
+    label: Safety PLC
+    icon: safe:relay
+  - domain: safety
+    kind: interlock_switch
+    label: Interlock Switch
+    icon: safe:relay

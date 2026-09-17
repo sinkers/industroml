@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang=en>
+<head>
+  <meta charset=utf-8>
+  <meta name=viewport content="width=device-width, initial-scale=1">
+  <title>Ravenbrook Components – Components</title>
+  <style>
+    :root {
+      --elec: #6b5cff; --mech: #1b7f2a; --data: #0b6a8b; --ctrl: #b26b00; --safe: #b00020;
+      --muted: #6b7280; --bg: #ffffff; --fg: #111827; --border: #e5e7eb;
+    }
+    body { font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; color: var(--fg); }
+    header { padding: 12px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; }
+    input[type="search"] { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
+    button { padding: 6px 10px; border: 1px solid var(--border); background: #f9fafb; border-radius: 6px; cursor: pointer; }
+    main { padding: 12px 16px; }
+    ul { list-style: none; padding-left: 18px; margin: 6px 0; }
+    li.container > details > summary { cursor: pointer; font-weight: 600; }
+    .muted { color: var(--muted); font-weight: 400; }
+    code { background: #f3f4f6; padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+    .asset.domain-electrical > :first-child { border-left: 3px solid var(--elec); padding-left: 6px; }
+    .asset.domain-mechanical > :first-child { border-left: 3px solid var(--mech); padding-left: 6px; }
+    .asset.domain-data > :first-child { border-left: 3px solid var(--data); padding-left: 6px; }
+    .asset.domain-control > :first-child { border-left: 3px solid var(--ctrl); padding-left: 6px; }
+    .asset.domain-safety > :first-child { border-left: 3px solid var(--safe); padding-left: 6px; }
+  </style>
+  <script>
+    function expandAll(open) {
+      document.querySelectorAll('details').forEach(d => d.open = open);
+    }
+    function onSearch(ev) {
+      const q = ev.target.value.trim();
+      // Show all by default
+      document.querySelectorAll('li').forEach(li => li.style.display = '');
+      if (!q) return;
+      // Expand for visibility
+      expandAll(true);
+      const items = document.querySelectorAll('li');
+      const needle = q.toLowerCase();
+      items.forEach(li => {
+        const txt = li.textContent.toLowerCase();
+        if (!txt.includes(needle)) { li.style.display = 'none'; }
+      });
+      // Ensure containers with visible descendants remain visible
+      document.querySelectorAll('li.container').forEach(li => {
+        const anyVisible = li.querySelector('li:not([style*="display: none"])');
+        if (anyVisible) li.style.display = '';
+      });
+    }
+    function applyDomainFilters() {
+      const enabled = new Set(Array.from(document.querySelectorAll('.domf')).filter(cb => cb.checked).map(cb => cb.getAttribute('data-domain')));
+      document.querySelectorAll('li.asset').forEach(li => {
+        const m = li.className.match(/domain-([a-z]+)/); const dom = m? m[1] : '';
+        li.style.display = enabled.has(dom) ? '' : 'none';
+      });
+      document.querySelectorAll('li.container').forEach(li => {
+        const anyVisible = li.querySelector('li:not([style*="display: none"])');
+        if (anyVisible) li.style.display = '';
+      });
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('search').addEventListener('input', onSearch);
+      document.getElementById('expand').addEventListener('click', () => expandAll(true));
+      document.getElementById('collapse').addEventListener('click', () => expandAll(false));
+      document.querySelectorAll('.domf').forEach(cb => cb.addEventListener('change', applyDomainFilters));
+      applyDomainFilters();
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Ravenbrook Components – Components</h1>
+    <div class=toolbar>
+      <input id=search type=search placeholder="Filter by name, kind, domain, id..."/>
+      <label><input type=checkbox class=domf data-domain=electrical checked> Electrical</label>
+      <label><input type=checkbox class=domf data-domain=mechanical checked> Mechanical</label>
+      <label><input type=checkbox class=domf data-domain=data checked> Data</label>
+      <label><input type=checkbox class=domf data-domain=control checked> Control</label>
+      <label><input type=checkbox class=domf data-domain=safety checked> Safety</label>
+      <button id=expand title="Expand all">Expand</button>
+      <button id=collapse title="Collapse all">Collapse</button>
+    </div>
+  </header>
+  <main>
+    <ul class=tree>
+      <li class=container><details open><summary>Ravenbrook Site <span class=muted>(site)</span> <code>SITE</code></summary><ul class=containers><li class=container><details open><summary>MCC Room <span class=muted>(room)</span> <code>BLD-MCC</code></summary><ul class=assets><li class=asset domain-data>Firewall FW1 <span class=muted>[firewall/data]</span> <code>FW1</code><ul class=interfaces><li class=interface>LAN <span class=muted>[data/ethernet_rj45]</span> <code>FW1.LAN</code></li></ul></li><li class=asset domain-electrical>MCC Section 630A <span class=muted>[mcc/electrical]</span> <code>MCC1</code><ul class=interfaces><li class=interface>Feeder to VFD-P1 <span class=muted>[electrical/ac_lv_3ph]</span> <code>MCC1.FEED-VFD</code></li><li class=interface>Incomer <span class=muted>[electrical/ac_lv_3ph]</span> <code>MCC1.IN</code></li></ul></li><li class=asset domain-electrical>Main Switchboard 1600A <span class=muted>[switchboard/electrical]</span> <code>MSB1</code><ul class=interfaces><li class=interface>Feeder to MCC1 <span class=muted>[electrical/ac_lv_3ph]</span> <code>MSB1.FEED-MCC1</code></li><li class=interface>Incomer <span class=muted>[electrical/ac_lv_3ph]</span> <code>MSB1.IN</code></li></ul></li><li class=asset domain-data>Core Switch SW1 <span class=muted>[ethernet_switch/data]</span> <code>SW1</code><ul class=interfaces><li class=interface>Port 5 <span class=muted>[data/ethernet_rj45]</span> <code>SW1.PORT5</code></li><li class=interface>Uplink <span class=muted>[data/ethernet_rj45]</span> <code>SW1.UPLINK</code></li></ul></li><li class=asset domain-electrical>Transformer 11kV/415V 1000kVA <span class=muted>[transformer/electrical]</span> <code>TX1</code><ul class=interfaces><li class=interface>HV Primary <span class=muted>[electrical/ac_lv_3ph]</span> <code>TX1.HV</code></li><li class=interface>LV Secondary <span class=muted>[electrical/ac_lv_3ph]</span> <code>TX1.LV</code></li></ul></li><li class=asset domain-electrical>VFD for Pump P1 (55kW) <span class=muted>[vfd/electrical]</span> <code>VFD-P1</code><ul class=interfaces><li class=interface>Ethernet <span class=muted>[data/ethernet_rj45]</span> <code>VFD-P1.ETH</code></li><li class=interface>Motor Out <span class=muted>[electrical/ac_lv_3ph]</span> <code>VFD-P1.MOTOR</code></li><li class=interface>Power In <span class=muted>[electrical/ac_lv_3ph]</span> <code>VFD-P1.IN</code></li></ul></li></ul><ul class=containers><li class=container><details open><summary>PLC Cabinet A <span class=muted>(cabinet)</span> <code>CAB-PLC</code></summary><ul class=assets><li class=asset domain-control>Analog Input Module (8ch) <span class=muted>[adc/control]</span> <code>ADC1</code><ul class=interfaces><li class=interface>AI1 <span class=muted>[control/ai_4_20mA]</span> <code>ADC1.AI1</code></li></ul></li><li class=asset domain-control>PLC CPU <span class=muted>[plc/control]</span> <code>PLC1</code><ul class=interfaces><li class=interface>DI1 <span class=muted>[control/di_dry]</span> <code>PLC1.DI1</code></li><li class=interface>Ethernet <span class=muted>[data/ethernet_rj45]</span> <code>PLC1.ETH</code></li></ul></li></ul></details></li></ul></details></li><li class=container><details open><summary>Process Hall <span class=muted>(building)</span> <code>BLD-PROC</code></summary><ul class=assets><li class=asset domain-control>Flow Transmitter FT-101 <span class=muted>[sensor/control]</span> <code>FT101</code><ul class=interfaces><li class=interface>Analog Out <span class=muted>[control/ai_4_20mA]</span> <code>FT101.AO</code></li></ul></li><li class=asset domain-mechanical>Centrifugal Pump P1 (55kW) <span class=muted>[pump/mechanical]</span> <code>P1</code><ul class=interfaces><li class=interface>Discharge <span class=muted>[mechanical/pipe_flanged]</span> <code>P1.DISCH</code></li><li class=interface>Motor Terminals <span class=muted>[electrical/ac_lv_3ph]</span> <code>P1.MOTOR</code></li><li class=interface>Suction <span class=muted>[mechanical/pipe_flanged]</span> <code>P1.SUCTION</code></li></ul></li><li class=asset domain-mechanical>Gate Valve V1 (DN100) <span class=muted>[valve/mechanical]</span> <code>V1</code><ul class=interfaces><li class=interface>Port A <span class=muted>[mechanical/pipe_flanged]</span> <code>V1.PORTA</code></li><li class=interface>Port B <span class=muted>[mechanical/pipe_flanged]</span> <code>V1.PORTB</code></li></ul></li></ul></details></li><li class=container><details open><summary>Tank Farm <span class=muted>(area)</span> <code>YARD-TANK</code></summary><ul class=assets><li class=asset domain-mechanical>Raw Water Tank T1 (50 m3) <span class=muted>[tank/mechanical]</span> <code>T1</code><ul class=interfaces><li class=interface>Outlet <span class=muted>[mechanical/pipe_flanged]</span> <code>T1.OUTLET</code></li></ul></li></ul></details></li></ul></details></li>
+    </ul>
+  </main>
+</body>
+</html>
