@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for the IndustrialML extraction functionality.
+Test script for the IndustroML extraction functionality.
 Demonstrates usage and validates output.
 """
 
@@ -11,7 +11,7 @@ from extract.extract_info import IndustroMLExtractor
 
 def test_validation():
     """Test the validation functionality with existing files"""
-    print("Testing IndustrialML validation...")
+    print("Testing IndustroML validation...")
     
     extractor = IndustroMLExtractor(require_api_key=False)
     
@@ -68,7 +68,7 @@ def demonstrate_usage():
     print("   - industrial: Generic industrial diagrams")
 
 if __name__ == "__main__":
-    print("IndustrialML Extraction Tool Test")
+    print("IndustroML Extraction Tool Test")
     print("=" * 40)
     
     test_validation()

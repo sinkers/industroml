@@ -1,6 +1,6 @@
 # Examples
 
-This repository ships a set of working examples that demonstrate the IndustrialML model, diagram generation, PNG export, and the HTML tree viewer.
+This repository ships a set of working examples that demonstrate the IndustroML model, diagram generation, PNG export, and the HTML tree viewer.
 
 ## Layout
 

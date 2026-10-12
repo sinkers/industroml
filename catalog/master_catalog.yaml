@@ -1,8 +1,8 @@
 meta:
-  format: IndustrialML-Catalog
+  format: IndustroML-Catalog
   version: "0.1"
   notes: |
-    Master catalogue of base element and connector types for IndustrialML.
+    Master catalogue of base element and connector types for IndustroML.
     Each element defines domain, kind, a human label, a suggested icon key,
     default attributes, and typical interfaces. Projects derive a subset into
     a project catalogue for authoring.
@@ -67,8 +67,10 @@ mediums:
     - ao_4_20mA
 
 connectors:
-  # Standardized connector types and their typical attribute fields and color schema
+  # Standardized connector types and their typical attribute fields and color schema.
+  # connection_type is the schema's connectionType each one is written as.
   - type: low_voltage
+    connection_type: cable
     label: Low-Voltage Electrical
     color: "#111827"   # black
     attributes:
@@ -78,6 +80,7 @@ connectors:
       - length_m
       - method
   - type: high_voltage
+    connection_type: cable
     label: High-Voltage Electrical
     color: "#dc2626"   # red
     attributes:
@@ -87,6 +90,7 @@ connectors:
       - length_m
       - method
   - type: data
+    connection_type: data_link
     label: Data / Communications
     color: "#059669"   # green
     attributes:
@@ -96,6 +100,7 @@ connectors:
       - speed_mbps
       - vlan
   - type: fluid
+    connection_type: pipe
     label: Mechanical / Fluid
     color: "#2563eb"   # blue
     attributes:
@@ -105,6 +110,15 @@ connectors:
       - length_m
       - service
       - pressure_bar
+  - type: signal
+    connection_type: io_link
+    label: Control / I/O Signal
+    color: "#7c3aed"   # violet
+    attributes:
+      - signal
+      - range
+      - cores
+      - length_m
 
 elements:
   # ELECTRICAL

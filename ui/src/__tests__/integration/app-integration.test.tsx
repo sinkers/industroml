@@ -30,7 +30,7 @@ describe('App Integration Tests', () => {
   };
 
   const mockCatalog = {
-    meta: { format: 'IndustrialML-Catalog', version: '0.1' },
+    meta: { format: 'IndustroML-Catalog', version: '0.1' },
     icons: {},
     mediums: {
       electrical: ['ac_lv_3ph'],

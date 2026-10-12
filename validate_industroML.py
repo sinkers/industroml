@@ -13,8 +13,8 @@ Exit codes:
   2 = referential or logical error(s)
 """
 from __future__ import annotations
-import argparse, json, sys, re
-from typing import Dict, Any, List, Set
+import argparse, json, os, sys, re
+from typing import Dict, Any, List, Optional, Set
 from collections import defaultdict
 
 def load_model(path: str) -> dict:
@@ -77,25 +77,53 @@ ALLOWED_DOMAINS = {
     "io_link":   {"control", "electrical", "mechanical", "safety"},
 }
 
-def ref_validate(model: dict) -> List[str]:
+CATALOG = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "catalog", "master_catalog.yaml")
+
+
+def load_kind_domains(path: str = CATALOG) -> Optional[Dict[str, Set[str]]]:
+    """Asset kind -> the domains the master catalogue allows it in.
+
+    None when the catalogue cannot be read (no PyYAML, or no file), in which
+    case the kind/domain check is skipped rather than guessed.
+    """
+    try:
+        import yaml
+        with open(path, "r", encoding="utf-8") as f:
+            cat = yaml.safe_load(f)
+    except Exception:
+        return None
+    out: Dict[str, Set[str]] = defaultdict(set)
+    for el in cat.get("elements") or []:
+        if el.get("kind") and el.get("domain"):
+            out[el["kind"]].add(el["domain"])
+    return dict(out)
+
+
+def ref_validate(model: dict,
+                 kind_domains: Optional[Dict[str, Set[str]]] = None) -> List[str]:
     errs: List[str] = []
+
+    # ID uniqueness. Checked on the lists as written: the dicts below keep the
+    # last of any repeated id, so a check on their keys can never find one.
+    for key, kind in (("containers", "container"), ("assets", "asset"),
+                      ("interfaces", "interface"), ("connections", "connection")):
+        seen: Set[str] = set()
+        for x in model.get(key, []) or []:
+            xid = x.get("id")
+            if xid in seen:
+                errs.append(f"Duplicate {kind} id: {xid}")
+            seen.add(xid)
+
     conts = {c["id"]: c for c in model.get("containers", [])}
     assets = {a["id"]: a for a in model.get("assets", [])}
     ifaces = {i["id"]: i for i in model.get("interfaces", [])}
     conns  = {c["id"]: c for c in model.get("connections", [])}
 
-    # ID uniqueness
-    def check_unique(ids: List[str], kind: str):
-        seen: Set[str] = set()
-        for x in ids:
-            if x in seen:
-                errs.append(f"Duplicate {kind} id: {x}")
-            seen.add(x)
-
-    check_unique(list(conts.keys()), "container")
-    check_unique(list(assets.keys()), "asset")
-    check_unique(list(ifaces.keys()), "interface")
-    check_unique(list(conns.keys()), "connection")
+    # A container and an asset may share an id only if they are the same
+    # thing; a route or a containment reference cannot tell them apart.
+    for xid in sorted(set(conts) & set(assets)):
+        errs.append(f"Id {xid} is both a container and an asset")
 
     # ID format
     for group, kind in [(conts, "container"), (assets, "asset"), (ifaces, "interface"), (conns, "connection")]:
@@ -131,6 +159,18 @@ def ref_validate(model: dict) -> List[str]:
         elif c == aid:
             errs.append(f"Asset {aid} contains itself")
 
+    # Asset kind -> domain, as the master catalogue defines it. A pump in the
+    # electrical domain is a typo that every later check trusts.
+    if kind_domains:
+        for aid, a in assets.items():
+            allowed = kind_domains.get(a.get("kind"))
+            if allowed and a.get("domain") not in allowed:
+                errs.append(
+                    f"Asset {aid} is kind '{a.get('kind')}' in domain "
+                    f"'{a.get('domain')}'; the catalogue has that kind in "
+                    f"{', '.join(sorted(allowed))}"
+                )
+
     # Interface -> asset
     for iid, i in ifaces.items():
         a = i.get("asset")
@@ -144,6 +184,12 @@ def ref_validate(model: dict) -> List[str]:
             errs.append(f"Connection {cid} 'from' interface {fr} not found")
         if to not in ifaces:
             errs.append(f"Connection {cid} 'to' interface {to} not found")
+
+    # Route waypoints are trays, conduits, racks: containers or assets.
+    for cid, c in conns.items():
+        for r in c.get("route") or []:
+            if r not in conts and r not in assets:
+                errs.append(f"Connection {cid} route via {r} not found")
 
     for cid, c in conns.items():
         ctype = c.get("type")
@@ -227,7 +273,11 @@ def main():
         schema_failed = False
 
     # Referential & logical checks
-    ref_errs = ref_validate(model)
+    kind_domains = load_kind_domains()
+    if kind_domains is None:
+        print("INFO: master catalogue unreadable (PyYAML missing?); "
+              "skipping the asset kind/domain check.", file=sys.stderr)
+    ref_errs = ref_validate(model, kind_domains)
     if ref_errs:
         print("Referential/logic errors:", file=sys.stderr)
         for e in ref_errs:

@@ -1,5 +1,5 @@
 meta:
-  format: IndustrialML-ProjectCatalog
+  format: IndustroML-ProjectCatalog
   version: "0.1"
   name: Water Plant (Typical)
   based_on: catalog/master_catalog.yaml
