@@ -88,6 +88,24 @@ left to right.
 | `service` (CHWS, CHWR, …) | A layer per service, `P-LINE-CHWS`, coloured so supply and return can be followed |
 | A closed loop | Cut where it returns to the chillers (or tanks or dry coolers), with the return drawn along the bottom |
 
+### Drawn where the model says
+
+If every asset on a pipe carries `attributes.schematic: [x, y]`, the P&ID
+isn't laid out at all. Each asset is drawn at its position:
+
+- **Equipment:** its symbol scaled into `schematic_size`.
+- **Valves:** turned by `schematic_rotation`.
+- **Junctions:** marked `junction: true`, and drawn as nothing but the
+  pipes meeting.
+- **Pipes:** each follows its connection's `schematic_path`, stopping
+  short of the symbols at its ends.
+
+A model read back from an existing drawing therefore keeps that drawing's
+arrangement, and comes out in these symbols, tags and layers. Automatic
+layout suits equipment-level models of tens of items. At reference-design
+scale (hundreds of valves and tees) it produces spaghetti, and positions
+are the answer.
+
 ## The DXF
 
 - **Format.** AutoCAD 2013 (AC1027), millimetres, drawn full size in model

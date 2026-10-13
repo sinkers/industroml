@@ -262,3 +262,48 @@ def test_sld_splits_into_overall_and_board_sheets(blocks):
     incoming = [p for p in mssb.prims if p.kind == "insert"
                 and p.data["block"] == "E-OPC"]
     assert len(incoming) == 1
+
+
+def _placed_model():
+    """Tank -> valve -> pump, each with a schematic position."""
+    def a(i, kind, x, y, **kw):
+        return {"id": i, "name": i, "kind": kind, "domain": "mechanical",
+                "container": "S", "attributes": {"schematic": [x, y], **kw}}
+
+    def iface(i):
+        return {"id": i, "asset": i.split(".")[0], "name": i.split(".")[1],
+                "domain": "mechanical", "medium": "pipe_flanged"}
+
+    return Model({
+        "meta": {"format": "IndustroML", "version": "0.1"},
+        "containers": [{"id": "S", "name": "S", "type": "site"}],
+        "assets": [a("T1", "tank", 0, 0, schematic_size=[1, 2]),
+                   a("V1", "valve", 2, 0, valve_type="gate"),
+                   a("P1", "pump", 4, 0, schematic_size=[0.8, 0.8])],
+        "interfaces": [iface(x) for x in ("T1.OUT", "V1.A", "V1.B", "P1.IN")],
+        "connections": [
+            {"id": "L1", "type": "pipe", "from": "T1.OUT", "to": "V1.A",
+             "attributes": {"schematic_path": [[0.5, 0], [2, 0]]}},
+            {"id": "L2", "type": "pipe", "from": "V1.B", "to": "P1.IN",
+             "attributes": {"schematic_path": [[2, 0], [3.6, 0]]}}],
+    })
+
+
+def test_schematic_positions_are_drawn_where_the_model_says(blocks):
+    m = _placed_model()
+    assert pid.placed(m)
+    canvas, plan = pid.layout(m, blocks)
+    k = pid.PLACED_MM
+    assert plan.nodes["V1"]["x"] == pytest.approx(2 * k)
+    valve = [p for p in canvas.prims if p.kind == "insert"
+             and p.data["block"] == "P-GATE"]
+    assert valve and valve[0].data["at"] == pytest.approx((2 * k, 0))
+    # the pipe stops at the valve body instead of running through it
+    lines = [p.data["pts"] for p in canvas.prims if p.kind == "polyline"
+             and p.layer.startswith("P-LINE")]
+    ends = [pt for pts in lines for pt in (pts[0], pts[-1])]
+    assert all(abs(x - 2 * k) > 1 for x, _ in ends)
+
+
+def test_models_without_positions_are_laid_out(dc):
+    assert not pid.placed(dc)

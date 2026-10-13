@@ -272,8 +272,24 @@ def parts(m: Model, blocks):
     return out
 
 
+def placed(m: Model) -> bool:
+    """True when the model says where its piping assets go on the diagram.
+
+    Every asset on a pipe needs attributes.schematic [x, y]; then the
+    diagram is drawn there, not laid out, so a model read from a drawing
+    comes back in the same arrangement.
+    """
+    ends = {m.asset_of(c.get(k, "")) for c in m.connections
+            if c.get("type") == "pipe" for k in ("from", "to")}
+    ends.discard(None)
+    return bool(ends) and all("schematic" in m.attrs(a) for a in ends)
+
+
 def layout(m: Model, blocks):
-    """Each separate system (a loop, a skid) on its own band, top down."""
+    """Each separate system (a loop, a skid) on its own band, top down; or,
+    when the model carries schematic positions, exactly where it says."""
+    if placed(m):
+        return layout_placed(m, blocks)
     lines, equipment = collect(m)
     plan = Plan(lines=lines)
     if not lines:
@@ -537,3 +553,106 @@ def legend_items(canvas: Canvas, blocks):
         items.append(("Instrument signal", None,
                       {"layer": "P-SIGNAL", "linetype": "DASHED"}))
     return items
+
+
+PLACED_MM = 22.0        # sheet mm per schematic unit, before fitting
+PLACED_SYMBOL = 0.55    # symbols drawn smaller: the source spacing is tight
+PLACED_TAG = 1.6
+
+
+def layout_placed(m: Model, blocks):
+    """Draw every piping asset at its schematic position.
+
+    Equipment is its symbol scaled into its schematic box; valves and
+    instruments are their symbols at their positions, turned with their
+    pipe; junctions are just where pipes meet. Each pipe follows its
+    schematic_path, stopping short of the symbols at its ends, with a flow
+    arrow on its longest straight.
+    """
+    plan = Plan()
+    pipes = [c for c in m.connections if c.get("type") == "pipe"]
+    ids = {m.asset_of(c[k]) for c in pipes for k in ("from", "to")}
+    ids.discard(None)
+    xs = [m.attrs(a)["schematic"][0] for a in ids]
+    ys = [m.attrs(a)["schematic"][1] for a in ids]
+    x0, y0 = min(xs), min(ys)
+    k = PLACED_MM
+
+    def P(p):
+        return ((p[0] - x0) * k, (p[1] - y0) * k)
+
+    c = Canvas()
+    half = {}                           # how far a pipe stops short
+    for a in sorted(ids, key=lambda a: m.order.get(a, 0)):
+        at = m.attrs(a)
+        x, y = P(at["schematic"])
+        kind = m.kind(a)
+        plan.nodes[a] = {"x": x, "y": y}
+        if at.get("junction"):
+            half[a] = 0.0
+            continue
+        block = _inline_block(m, a)
+        if block or kind in INSTRUMENT_LETTERS or kind in (
+                "pressure_gauge", "temperature_indicator"):
+            rot = at.get("schematic_rotation", 0)
+            if block:
+                c.insert(block, (x, y), "P-VALVE", rotation=rot,
+                         scale=PLACED_SYMBOL)
+                half[a] = blocks[block].size[0] * PLACED_SYMBOL / 2
+            else:
+                fn, loop = _letters(m, a)
+                c.insert("P-INST", (x, y), "P-INST", scale=PLACED_SYMBOL,
+                         attribs={"FUNC": fn, "LOOP": loop})
+                half[a] = 5 * PLACED_SYMBOL
+            if rot == 90:
+                c.text((x + 2.6, y), m.tag(a), PLACED_TAG, "P-TAG",
+                       align="MIDDLE_LEFT")
+            else:
+                c.text((x, y - 2.6), m.tag(a), PLACED_TAG, "P-TAG",
+                       align="TOP_CENTER")
+            continue
+        block = _equip_block(m, a)
+        sw, sh = at.get("schematic_size", (1.0, 1.0))
+        bw, bh = blocks[block].size
+        sc = min(sw * k / bw, sh * k / bh)
+        c.insert(block, (x, y), "P-EQUIP", scale=sc)
+        c.rect((x - sw * k / 2, y - sh * k / 2), (x + sw * k / 2, y + sh * k / 2),
+               "P-TEXT", linetype="DASHED")
+        c.text((x, y - sh * k / 2 - 1.5), m.tag(a), TAG, "P-TAG",
+               align="TOP_CENTER")
+        half[a] = 0.0
+    for conn in pipes:
+        a, b = m.asset_of(conn["from"]), m.asset_of(conn["to"])
+        attrs = conn.get("attributes") or {}
+        path = attrs.get("schematic_path") or [m.attrs(a)["schematic"],
+                                                m.attrs(b)["schematic"]]
+        pts = [P(p) for p in path]
+        pts = _trim(pts, half.get(a, 0.0), half.get(b, 0.0))
+        if len(pts) < 2:
+            continue
+        layer = layer_for_service(attrs.get("service"))
+        c.polyline(pts, layer)
+        seg = max(zip(pts, pts[1:]), key=lambda s: abs(s[1][0] - s[0][0])
+                  + abs(s[1][1] - s[0][1]))
+        if abs(seg[1][0] - seg[0][0]) + abs(seg[1][1] - seg[0][1]) > 12:
+            _arrow(c, *seg, layer)
+    return c, plan
+
+
+def _trim(pts, start, end):
+    """Shorten a polyline by start at its first end and end at its last."""
+    import math as _m
+    pts = list(pts)
+    for at_start, d in ((True, start), (False, end)):
+        if d <= 0 or len(pts) < 2:
+            continue
+        a, b = (pts[0], pts[1]) if at_start else (pts[-1], pts[-2])
+        L = _m.dist(a, b)
+        if L <= d:
+            continue
+        q = (a[0] + (b[0] - a[0]) * d / L, a[1] + (b[1] - a[1]) * d / L)
+        if at_start:
+            pts[0] = q
+        else:
+            pts[-1] = q
+    return pts
