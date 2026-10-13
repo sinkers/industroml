@@ -1,0 +1,35 @@
+{
+ "model": "ravenbrook_site.yaml",
+ "sha256": "77118f0565cfbeaaed69cef4b3deafd9a16b7907238cef214e0abb6bcd86f05c",
+ "generator": "industroml drawings 0.1.0",
+ "drawings": [
+  {
+   "kind": "sld",
+   "warnings": [],
+   "nodes": 5,
+   "size": "A2",
+   "paper_mm": [
+    594.0,
+    420.0
+   ],
+   "scale": 1.0,
+   "dxf": "ravenbrook_site_sld.dxf",
+   "pdf": "ravenbrook_site_sld.pdf",
+   "png": "ravenbrook_site_sld.png"
+  },
+  {
+   "kind": "pid",
+   "warnings": [],
+   "nodes": 3,
+   "size": "A3",
+   "paper_mm": [
+    420.0,
+    297.0
+   ],
+   "scale": 1.0,
+   "dxf": "ravenbrook_site_pid.dxf",
+   "pdf": "ravenbrook_site_pid.pdf",
+   "png": "ravenbrook_site_pid.png"
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+ "model": "dc_hall_demo.yaml",
+ "sha256": "74f43d6aae16adbecfcde6f5e3792318e23438ce42ecff76dc5bb7f3db26cbb2",
+ "generator": "industroml drawings 0.1.0",
+ "drawings": [
+  {
+   "kind": "sld",
+   "warnings": [],
+   "nodes": 30,
+   "size": "A0",
+   "paper_mm": [
+    1189.0,
+    841.0
+   ],
+   "scale": 1.0,
+   "dxf": "dc_hall_demo_sld.dxf",
+   "pdf": "dc_hall_demo_sld.pdf",
+   "png": "dc_hall_demo_sld.png"
+  },
+  {
+   "kind": "pid",
+   "warnings": [],
+   "nodes": 14,
+   "size": "A1",
+   "paper_mm": [
+    841.0,
+    594.0
+   ],
+   "scale": 1.0,
+   "dxf": "dc_hall_demo_pid.dxf",
+   "pdf": "dc_hall_demo_pid.pdf",
+   "png": "dc_hall_demo_pid.png"
+  }
+ ]
+}
