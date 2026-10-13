@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IndustroML</title>
+<meta name="description" content="One text schema for a plant across electrical, mechanical, data, control and safety: containers, assets, interfaces and connections.">
+<meta property="og:title" content="IndustroML: one schema for a plant">
+<meta property="og:description" content="Describe a plant once, across every engineering domain that has to agree about it.">
+<meta property="og:image" content="img/diagram_electrical.png">
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --ink: #14181f; --muted: #5b6573;
+  --line: #dde1e7; --accent: #1f6fd1; --accent-2: #d1402b; --good: #1b8a52;
+  --warn: #a8810f; --plan: #6b6b8a; --code: #eef1f5;
+  --shadow: 0 1px 2px rgba(20,24,31,.06), 0 4px 16px rgba(20,24,31,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1116; --surface: #161b22; --ink: #e6e9ee; --muted: #9aa4b2;
+    --line: #2a313c; --accent: #5b9df0; --accent-2: #ef7563; --good: #3fbf7f;
+    --warn: #d9b343; --plan: #9b9bbd; --code: #1d232c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1116; --surface: #161b22; --ink: #e6e9ee; --muted: #9aa4b2;
+  --line: #2a313c; --accent: #5b9df0; --accent-2: #ef7563; --good: #3fbf7f;
+  --warn: #d9b343; --plan: #9b9bbd; --code: #1d232c;
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88em; }
+code { background: var(--code); padding: .1em .35em; border-radius: 4px; }
+pre { background: var(--code); padding: 14px 16px; border-radius: 8px; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+header.top {
+  border-bottom: 1px solid var(--line); background: var(--surface);
+  position: sticky; top: 0; z-index: 5;
+}
+header.top .wrap { display: flex; align-items: center; gap: 20px; height: 56px; }
+.brand { font-weight: 700; letter-spacing: .02em; color: var(--ink); text-decoration: none; }
+nav { display: flex; gap: 18px; margin-left: auto; overflow-x: auto; white-space: nowrap; }
+nav a { color: var(--muted); text-decoration: none; font-size: .92rem; }
+nav a:hover { color: var(--ink); }
+.hero { padding: 56px 0 32px; }
+.hero h1 { font-size: clamp(1.9rem, 4.5vw, 3rem); line-height: 1.15; margin: 0 0 16px; letter-spacing: -.01em; }
+.hero p.lede { font-size: 1.15rem; color: var(--muted); max-width: 46em; margin: 0 0 24px; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  display: inline-block; padding: 9px 16px; border-radius: 8px; text-decoration: none;
+  font-weight: 600; font-size: .95rem; border: 1px solid var(--line); color: var(--ink);
+  background: var(--surface);
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+figure { margin: 0; }
+.shot {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; box-shadow: var(--shadow);
+}
+.shot img { display: block; width: 100%; height: auto; }
+.shot.light img { background: #fff; }
+figcaption { font-size: .88rem; color: var(--muted); padding: 10px 14px; border-top: 1px solid var(--line); }
+section { padding: 40px 0; border-top: 1px solid var(--line); }
+section h2 { font-size: 1.6rem; margin: 0 0 8px; letter-spacing: -.005em; }
+section h3 { font-size: 1.15rem; margin: 28px 0 8px; }
+section > .wrap > p.intro { color: var(--muted); max-width: 48em; margin-top: 0; }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .g2, .g3 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px 20px; box-shadow: var(--shadow);
+}
+.card h3 { margin-top: 0; }
+.card p { margin: 0; color: var(--muted); }
+.loop {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 8px;
+}
+.loop .step {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 14px; font-size: .92rem;
+}
+.loop .step b { display: block; }
+.loop .arrow { color: var(--muted); }
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+tr:last-child td { border-bottom: 0; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill {
+  display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 8px;
+  border-radius: 999px; border: 1px solid currentColor; white-space: nowrap;
+}
+.pill.built { color: var(--good); }
+.pill.partial { color: var(--warn); }
+.pill.planned { color: var(--plan); }
+.note {
+  border-left: 3px solid var(--warn); background: var(--surface); padding: 12px 16px;
+  border-radius: 0 8px 8px 0; color: var(--muted); font-size: .92rem; margin: 20px 0 0;
+}
+ul.tight { padding-left: 1.2em; margin: 8px 0; }
+ul.tight li { margin: 4px 0; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: .88rem; }
+.dom { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+.yaml-grid { display:grid; grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr); gap:16px; align-items:start; }
+@media (max-width: 760px) { .yaml-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#">IndustroML</a>
+    <nav aria-label="Sections">
+      <a href="#model">Object model</a>
+      <a href="#views">Views</a>
+      <a href="#tools">Tools</a>
+      <a href="#agents">For agents</a>
+      <a href="#status">Status</a>
+      <a href="https://github.com/sinkers/industroml">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap">
+    <h1>One schema for a plant, across every domain that has to agree about it</h1>
+    <p class="lede">Electrical, mechanical, controls and network engineers describe the same building four times, in four tools, and reconcile the results in meetings. IndustroML lets them describe it once. A pump is one object with a power feed, a pipe, an I/O point and a network address, not four separate drawings of a pump.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/sinkers/industroml">View on GitHub</a>
+      <a class="btn" href="https://sinkers.github.io/sd-dc/">Used by SD-DC</a>
+      <a class="btn" href="#model">How it works</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <figure class="shot light">
+    <img src="img/diagram_electrical.png" alt="The Ravenbrook example as an electrical single line: transformer to main switchboard to MCC to VFD, each cable labelled with its size, cores, insulation, length and installation method" width="1984" height="554">
+    <figcaption>One model, filtered to the electrical domain and rendered. The same file also gives the P&amp;ID, the network diagram and the control loops.</figcaption>
+  </figure>
+</div>
+
+<section id="model" style="margin-top:40px">
+  <div class="wrap">
+    <h2>Four lists, and that's the format</h2>
+    <p class="intro">It's text, which is the point: it diffs, it can be reviewed, it validates in CI, and an agent can write it.</p>
+    <div class="grid g2">
+      <div class="card"><h3>Containers</h3><p>Physical or logical groupings, which nest: site, building, room, skid, cabinet, rack, tray, pipe rack, conduit.</p></div>
+      <div class="card"><h3>Assets</h3><p>The equipment, each in one container: transformer, switchboard, pump, heat exchanger, PLC, firewall, gas detector.</p></div>
+      <div class="card"><h3>Interfaces</h3><p>The ports on an asset, each with a domain and a medium. Ids are scoped to the asset, such as <code>P1.SUC</code> or <code>PLC1.AI1</code>.</p></div>
+      <div class="card"><h3>Connections</h3><p>What joins two interfaces and how it gets there: a cable, pipe, data link or I/O link, with an optional route through named trays and racks.</p></div>
+    </div>
+    <div class="yaml-grid" style="margin-top:20px">
+<pre><code>meta:
+  format: IndustroML
+  version: "0.1"
+  site_name: Ravenbrook Water Plant
+
+containers:
+  - { id: SITE,    type: site }
+  - { id: BLD-MCC, type: room, parent: SITE }
+
+assets:
+  - id: MSB1
+    kind: switchboard
+    domain: electrical
+    container: BLD-MCC
+    attributes: { voltage_v: 415, current_a: 1600 }
+
+interfaces:
+  - { id: MSB1.FEED-MCC1, asset: MSB1,
+      domain: electrical, medium: ac_lv_3ph }
+
+connections:
+  - id: C-MSB1-MCC1
+    type: cable
+    from: MSB1.FEED-MCC1
+    to: MCC1.IN
+    route: [TRAY-A1, TRAY-A2, RISER-3]
+    attributes: { csa_mm2: 185, cores: 4,
+                  length_m: 15, method: tray }</code></pre>
+      <div>
+        <div class="card">
+          <h3>The field that earns the format</h3>
+          <p><code>route: [TRAY-A1, TRAY-A2, RISER-3]</code> makes a connection a physical object as well as a line on a diagram. It's an electrical fact, a geometric fact and a quantity on the bill of materials at once, so a sizing tool can pass a length to costing and a bundle to tray fill without anyone inventing a second format.</p>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3>Closed vocabularies</h3>
+          <p>Five domains, around 150 asset kinds, 14 media and 4 connection types, all closed lists. A validator rejects a typo instead of passing it to a tool that will quietly ignore it.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Connections cross domains</h3>
+    <p>That's the usual case, not the exception. A pipe ends at a flow transmitter whose process port is mechanical but whose device is control. The validator allows the crossings that happen in real plants and rejects the rest.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Connection</th><th>May join</th></tr></thead>
+        <tbody>
+          <tr><td><code>cable</code></td><td>electrical, control, data, safety</td></tr>
+          <tr><td><code>pipe</code></td><td>mechanical, control, safety</td></tr>
+          <tr><td><code>data_link</code></td><td>data, control, safety</td></tr>
+          <tr><td><code>io_link</code></td><td>control, electrical, mechanical, safety</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Some assets hold others. A breaker sits inside its MCC, so an asset's container may be an enclosure asset such as a switchboard, MCC or distribution board. Otherwise every switchboard would have to be modelled twice and kept in step.</p>
+  </div>
+</section>
+
+<section id="views">
+  <div class="wrap">
+    <h2>One model, every view</h2>
+    <p class="intro">Filter the same file by domain and render it. The mechanical engineer and the network engineer are looking at one object graph, not two drawings that were each true at a different time.</p>
+    <div class="grid g2">
+      <figure class="shot light">
+        <img src="img/diagram_mechanical.png" alt="The mechanical view: tank to gate valve to pump, each pipe labelled with material, DN, schedule, length and service" width="738" height="1153" loading="lazy">
+        <figcaption><code>--domains mechanical</code>: tank, valve and pump, with each pipe's material, DN, schedule and length.</figcaption>
+      </figure>
+      <figure class="shot light">
+        <img src="img/diagram_data_control.png" alt="The data and control view: PLC, ADC, sensor and network switch with their links" width="1377" height="678" loading="lazy">
+        <figcaption><code>--domains data,control</code>: PLC, I/O, sensor and network switch.</figcaption>
+      </figure>
+    </div>
+    <figure class="shot light" style="margin-top:16px">
+      <img src="img/diagram_all.png" alt="Every domain of the Ravenbrook example in one diagram" width="1984" height="505" loading="lazy">
+      <figcaption>Every domain at once. Black is low-voltage electrical, red high voltage, green data and blue fluid.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="wrap">
+    <h2>What's in the repo</h2>
+    <div class="table-scroll">
+      <table>
+        <tbody>
+          <tr><td><code>industroml.schema.json</code></td><td>JSON Schema 2020-12, the normative definition</td></tr>
+          <tr><td><code>validate_industroML.py</code></td><td>Schema validation plus the referential and domain checks a schema can't express. Reads JSON or YAML. Exits 0 when valid, 1 on schema errors and 2 on reference errors, so it drops straight into CI</td></tr>
+          <tr><td><code>generate.py</code></td><td>Model to Mermaid, PNG, an HTML tree, and tree and graph JSON, with domain filters and catalogue enrichment</td></tr>
+          <tr><td><code>catalog/</code></td><td>A master catalogue of element types with default attributes, typical interfaces and icon keys, plus SVG icons for all five domains</td></tr>
+          <tr><td><code>examples/</code></td><td>Worked models: a water plant, a combined water and wastewater plant, and a data centre</td></tr>
+          <tr><td><code>ui/</code></td><td>A Next.js editor: filtered tree view, add, edit, clone and delete, with form validation</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre style="margin-top:16px"><code>git clone https://github.com/sinkers/industroml
+cd industroml
+pip install -r requirements.txt     # pyyaml and jsonschema, both optional
+
+python3 validate_industroML.py examples/models/ravenbrook_site.yaml
+python3 generate.py examples/models/ravenbrook_site.yaml \
+    --out diagram.mmd --domains electrical</code></pre>
+  </div>
+</section>
+
+<section id="agents">
+  <div class="wrap">
+    <h2>A model agents read and write</h2>
+    <p class="intro">IndustroML is the interchange format for <a href="https://sinkers.github.io/sd-dc/">SD-DC</a>, an agentic stack for data centre design. Cable sizing, pipe and tray routing, costing, CFD and CAD all read the one model and write their results back to it.</p>
+    <div class="loop" role="list">
+      <div class="step" role="listitem"><b>A person draws</b></div>
+      <div class="step" role="listitem"><b>A model reads a drawing</b></div>
+      <div class="step" role="listitem"><b>An agent composes from a brief</b></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step" role="listitem"><b>IndustroML</b>one schema, five domains</div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step" role="listitem"><b>Tools</b>sizing, routing, costing, CFD, CAD</div>
+    </div>
+    <p>The model holds the state of a design, not the conversation. An agent reads the model, plans, calls tools and writes the results back with where each value came from. If a turn is cut off, the next one resumes from the model instead of starting over. The SD-DC pipe router returns each routed pipe as an IndustroML connection, ready to write in.</p>
+    <p>Nothing in the format is specific to data centres. The worked examples are water and wastewater plants, because those exercise all five domains harder than a data hall does.</p>
+  </div>
+</section>
+
+<section id="status">
+  <div class="wrap">
+    <h2>Status and what's next</h2>
+    <p class="intro">Version 0.1. It describes a plant well; it can't yet compile to a building.</p>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Gaps today</h3>
+        <ul class="tight">
+          <li>No geometry: assets have no position or size, and a route is a list of names rather than a path</li>
+          <li>No port positions, so routing tools are given nozzles and obstacles directly</li>
+          <li>Attributes are untyped, and units are a naming convention</li>
+          <li>Nowhere to record where a value came from</li>
+          <li>The editor doesn't load or save files yet</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Roadmap</h3>
+        <ul class="tight">
+          <li><span class="pill partial">Next</span> Ports, inline items such as valves on a pipe line, geometry, tags and provenance, proved on a chilled-water model</li>
+          <li><span class="pill planned">Then</span> Electrical coverage taken from real single-line diagrams</li>
+          <li><span class="pill planned">Then</span> Redundancy, operating modes and templates</li>
+          <li><span class="pill planned">Later</span> Importers from DXF that flag every guess they make</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">There's no licence file yet, so default copyright applies. That's an oversight rather than a position; raise an issue if you need it settled.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    IndustroML · <a href="https://github.com/sinkers/industroml">github.com/sinkers/industroml</a> · part of <a href="https://sinkers.github.io/sd-dc/">SD-DC</a>
+  </div>
+</footer>
+</body>
+</html>
