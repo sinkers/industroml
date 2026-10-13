@@ -213,6 +213,29 @@ def _gate(c):
     _bowtie(c)
 
 
+def _balancing(c):
+    _bowtie(c)
+    c.line((0, 0), (0, 3.5))
+    c.line((-1.6, 3.5), (1.6, 3.5))
+    c.line((-1.4, -2.6), (1.4, 2.6))
+
+
+def _control_3way(c):
+    _bowtie(c)
+    c.polyline([(-2.5, -4), (2.5, -4), (0, 0)], closed=True)   # third port
+    c.line((0, 0), (0, 5))
+    c.arc((0, 5), 3, 0, 180)
+    c.line((-3, 5), (3, 5))
+
+
+def _flexible(c):
+    c.line((-4, 0), (-3, 0))
+    pts = [(-3, 0)] + [(-3 + 0.75 * (i + 1), 1.4 if i % 2 == 0 else -1.4)
+                       for i in range(7)] + [(3, 0)]
+    c.polyline(pts)
+    c.line((3, 0), (4, 0))
+
+
 def _globe(c):
     _bowtie(c)
     c.solid([(-0.9, -0.9), (0.9, -0.9), (0.9, 0.9), (-0.9, 0.9)])
@@ -375,6 +398,14 @@ def _air_sep(c):
 
 PROCESS = {
     "P-GATE": ("Gate valve", (8, 6), {"in": (-4, 0), "out": (4, 0)}, _gate),
+    "P-ISO": ("Isolation valve, normally open", (8, 6),
+              {"in": (-4, 0), "out": (4, 0)}, _gate),
+    "P-BAL": ("Balancing valve", (8, 9), {"in": (-4, 0), "out": (4, 0)},
+              _balancing),
+    "P-CV3": ("Control valve, three-way", (8, 18),
+              {"in": (-4, 0), "out": (4, 0)}, _control_3way),
+    "P-FLEX": ("Flexible connection", (8, 4), {"in": (-4, 0), "out": (4, 0)},
+               _flexible),
     "P-GLOBE": ("Globe valve", (8, 6), {"in": (-4, 0), "out": (4, 0)}, _globe),
     "P-BALL": ("Ball valve", (8, 6), {"in": (-4, 0), "out": (4, 0)}, _ball),
     "P-BFLY": ("Butterfly valve", (8, 6), {"in": (-4, 0), "out": (4, 0)},
@@ -462,11 +493,17 @@ PID_INLINE = {
     "strainer_basket": "P-STRAINER", "filter": "P-FILTER",
     "filter_bag": "P-FILTER", "orifice_plate": "P-ORIFICE",
     "venturi_tube": "P-ORIFICE", "flow_nozzle": "P-ORIFICE",
+    "flexible_connection": "P-FLEX",
 }
 
 #: valve_type attribute on a generic "valve".
 VALVE_TYPES = {"gate": "P-GATE", "globe": "P-GLOBE", "ball": "P-BALL",
-               "butterfly": "P-BFLY", "check": "P-CHECK", "control": "P-CV"}
+               "butterfly": "P-BFLY", "check": "P-CHECK", "control": "P-CV",
+               "isolation": "P-ISO", "balancing": "P-BAL",
+               "control_3way": "P-CV3"}
+
+#: Kinds that are only where pipes meet: drawn as nothing but the pipes.
+PID_JUNCTIONS = {"tee", "header_junction"}
 
 PID_EQUIPMENT = {
     "pump": "P-PUMP", "pump_positive_displacement": "P-PUMP",

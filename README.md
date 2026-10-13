@@ -108,6 +108,22 @@ connections:
     attributes: { csa_mm2: 185, cores: 4, insulation: XLPE, length_m: 15, method: tray }
 ```
 
+### Where things are on the drawing, and what each port does
+
+Optional, and only for models that need them:
+
+- **`schematic` on an asset:** `{at, size, rotation}`, where it sits on a
+  P&ID or SLD.
+- **`schematic` on a connection:** `{path}`, the route it takes.
+- **`meta.schematic`:** the units and source drawing those numbers come
+  from.
+- **`role` on an interface:** `in`, `out`, `supply`, `return`, `suction`,
+  `discharge`, `tap`, `vent`, `drain`, `a`, `b`. Tools then don't have to
+  guess what a port is from its name.
+- **Kinds:** `tee` and `flexible_connection` are asset kinds, so a pipe
+  network read from a drawing has somewhere to put its junctions and
+  bellows.
+
 ### The two fields that earn the format
 
 **`route`** turns a connection from a line on a diagram into a physical object.

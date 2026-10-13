@@ -307,3 +307,73 @@ def test_schematic_positions_are_drawn_where_the_model_says(blocks):
 
 def test_models_without_positions_are_laid_out(dc):
     assert not pid.placed(dc)
+
+
+def test_schematic_fields_validate_and_draw(tmp_path, blocks):
+    """The schema's own schematic fields, roles, tees and flexible
+    connections: a model using them validates and draws placed."""
+    import json
+    import jsonschema
+    data = {
+        "meta": {"format": "IndustroML", "version": "0.1",
+                 "schematic": {"units": "mm on the source sheet"}},
+        "containers": [{"id": "S", "name": "S", "type": "site"}],
+        "assets": [
+            {"id": "P1", "name": "Pump", "kind": "pump", "domain": "mechanical",
+             "container": "S", "schematic": {"at": [0, 0], "size": [1, 1]}},
+            {"id": "F1", "name": "Flex", "kind": "flexible_connection",
+             "domain": "mechanical", "container": "S",
+             "schematic": {"at": [2, 0], "rotation": 0}},
+            {"id": "T1", "name": "Tee", "kind": "tee", "domain": "mechanical",
+             "container": "S", "schematic": {"at": [4, 0]}},
+            {"id": "V1", "name": "Valve", "kind": "valve",
+             "domain": "mechanical", "container": "S",
+             "attributes": {"valve_type": "balancing"},
+             "schematic": {"at": [4, 2], "rotation": 90}},
+        ],
+        "interfaces": [
+            {"id": "P1.DISCHARGE", "asset": "P1", "domain": "mechanical",
+             "medium": "pipe_welded", "role": "discharge"},
+            {"id": "F1.A", "asset": "F1", "domain": "mechanical",
+             "medium": "pipe_welded", "role": "in"},
+            {"id": "F1.B", "asset": "F1", "domain": "mechanical",
+             "medium": "pipe_welded", "role": "out"},
+            {"id": "T1.IN", "asset": "T1", "domain": "mechanical",
+             "medium": "pipe_welded", "role": "in"},
+            {"id": "T1.OUT", "asset": "T1", "domain": "mechanical",
+             "medium": "pipe_welded", "role": "out"},
+            {"id": "V1.IN", "asset": "V1", "domain": "mechanical",
+             "medium": "pipe_welded", "role": "in"},
+        ],
+        "connections": [
+            {"id": "L1", "type": "pipe", "from": "P1.DISCHARGE", "to": "F1.A",
+             "schematic": {"path": [[0.5, 0], [2, 0]]}},
+            {"id": "L2", "type": "pipe", "from": "F1.B", "to": "T1.IN",
+             "schematic": {"path": [[2, 0], [4, 0]]}},
+            {"id": "L3", "type": "pipe", "from": "T1.OUT", "to": "V1.IN",
+             "attributes": {"service": "HTWS"},
+             "schematic": {"path": [[4, 0], [4, 2]]}},
+        ],
+    }
+    with open(os.path.join(ROOT, "industroml.schema.json")) as fh:
+        jsonschema.validate(data, json.load(fh))
+    m = Model(data)
+    assert pid.placed(m)
+    canvas, _ = pid.layout(m, blocks)
+    inserts = {p.data["block"] for p in canvas.prims if p.kind == "insert"}
+    assert {"P-FLEX", "P-BAL"} <= inserts
+    assert not any(p.kind == "insert" and p.data["at"] == pytest.approx(
+        (4 * pid.PLACED_MM, 0)) for p in canvas.prims)      # tee: no symbol
+    assert any(p.layer == "P-LINE-HTWS" for p in canvas.prims)
+
+
+def test_bad_role_is_rejected():
+    import json
+    import jsonschema
+    with open(os.path.join(ROOT, "industroml.schema.json")) as fh:
+        schema = json.load(fh)
+    bad = {"id": "P1.X", "asset": "P1", "domain": "mechanical",
+           "medium": "pipe_welded", "role": "sideways"}
+    v = jsonschema.Draft202012Validator(
+        {"$defs": schema["$defs"], "$ref": "#/$defs/interface"})
+    assert list(v.iter_errors(bad))

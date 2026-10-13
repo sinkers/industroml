@@ -833,3 +833,11 @@ elements:
     kind: crah
     label: Air handler or fan wall with a chilled-water coil
     icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: tee
+    label: Pipe tee or junction
+    icon: pid:valve
+  - domain: mechanical
+    kind: flexible_connection
+    label: Flexible connection or bellows
+    icon: pid:valve

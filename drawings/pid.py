@@ -26,7 +26,8 @@ from typing import Dict, List, Optional
 from .canvas import Canvas, text_width
 from .dxf import layer_for_service
 from .model import Model, pipe_line_number, rating
-from .symbols import INSTRUMENT_LETTERS, PID_EQUIPMENT, PID_INLINE, VALVE_TYPES
+from .symbols import (INSTRUMENT_LETTERS, PID_EQUIPMENT, PID_INLINE,
+                      PID_JUNCTIONS, VALVE_TYPES)
 
 TXT = 2.0
 TAG = 2.8
@@ -275,14 +276,14 @@ def parts(m: Model, blocks):
 def placed(m: Model) -> bool:
     """True when the model says where its piping assets go on the diagram.
 
-    Every asset on a pipe needs attributes.schematic [x, y]; then the
-    diagram is drawn there, not laid out, so a model read from a drawing
-    comes back in the same arrangement.
+    Every asset on a pipe needs a schematic placement; then the diagram is
+    drawn there, not laid out, so a model read from a drawing comes back in
+    the same arrangement.
     """
     ends = {m.asset_of(c.get(k, "")) for c in m.connections
             if c.get("type") == "pipe" for k in ("from", "to")}
     ends.discard(None)
-    return bool(ends) and all("schematic" in m.attrs(a) for a in ends)
+    return bool(ends) and all(m.schematic(a) for a in ends)
 
 
 def layout(m: Model, blocks):
@@ -561,22 +562,23 @@ PLACED_TAG = 1.6
 
 
 def layout_placed(m: Model, blocks):
-    """Draw every piping asset at its schematic position.
+    """Draw every asset at its schematic position.
 
-    Equipment is its symbol scaled into its schematic box; valves and
+    Equipment is its symbol scaled into its outline; valves, fittings and
     instruments are their symbols at their positions, turned with their
-    pipe; junctions are just where pipes meet. Each pipe follows its
-    schematic_path, stopping short of the symbols at its ends, with a flow
-    arrow on its longest straight.
+    pipe; tees are just where pipes meet. Assets on no pipe but with a
+    placement (racks, say) are drawn as labelled outlines. Each pipe
+    follows its schematic path, stops short of the symbols at its ends,
+    and carries a flow arrow on its longest straight.
     """
     plan = Plan()
     pipes = [c for c in m.connections if c.get("type") == "pipe"]
-    ids = {m.asset_of(c[k]) for c in pipes for k in ("from", "to")}
-    ids.discard(None)
-    xs = [m.attrs(a)["schematic"][0] for a in ids]
-    ys = [m.attrs(a)["schematic"][1] for a in ids]
+    ids = [a for a in m.assets if m.schematic(a)]
+    xs = [m.schematic(a)["at"][0] for a in ids]
+    ys = [m.schematic(a)["at"][1] for a in ids]
     x0, y0 = min(xs), min(ys)
     k = PLACED_MM
+    on_pipe = {m.asset_of(c[e]) for c in pipes for e in ("from", "to")}
 
     def P(p):
         return ((p[0] - x0) * k, (p[1] - y0) * k)
@@ -584,17 +586,17 @@ def layout_placed(m: Model, blocks):
     c = Canvas()
     half = {}                           # how far a pipe stops short
     for a in sorted(ids, key=lambda a: m.order.get(a, 0)):
-        at = m.attrs(a)
-        x, y = P(at["schematic"])
+        sch = m.schematic(a)
+        x, y = P(sch["at"])
         kind = m.kind(a)
         plan.nodes[a] = {"x": x, "y": y}
-        if at.get("junction"):
+        if kind in PID_JUNCTIONS or m.attrs(a).get("junction"):
             half[a] = 0.0
             continue
+        rot = sch.get("rotation", 0)
         block = _inline_block(m, a)
         if block or kind in INSTRUMENT_LETTERS or kind in (
                 "pressure_gauge", "temperature_indicator"):
-            rot = at.get("schematic_rotation", 0)
             if block:
                 c.insert(block, (x, y), "P-VALVE", rotation=rot,
                          scale=PLACED_SYMBOL)
@@ -604,15 +606,25 @@ def layout_placed(m: Model, blocks):
                 c.insert("P-INST", (x, y), "P-INST", scale=PLACED_SYMBOL,
                          attribs={"FUNC": fn, "LOOP": loop})
                 half[a] = 5 * PLACED_SYMBOL
-            if rot == 90:
+            if kind == "flexible_connection":
+                continue                   # untagged on the source
+            if rot in (90, 270):
                 c.text((x + 2.6, y), m.tag(a), PLACED_TAG, "P-TAG",
                        align="MIDDLE_LEFT")
             else:
                 c.text((x, y - 2.6), m.tag(a), PLACED_TAG, "P-TAG",
                        align="TOP_CENTER")
             continue
+        sw, sh = sch.get("size", (1.0, 1.0))
+        if a not in on_pipe:
+            # an outline only, labelled: a rack, a room item
+            c.rect((x - sw * k / 2, y - sh * k / 2),
+                   (x + sw * k / 2, y + sh * k / 2), "P-EQUIP")
+            label = m.attrs(a).get("label") or m.tag(a)
+            c.text((x, y), label, min(TAG, sw * k * 0.3), "P-TAG",
+                   align="MIDDLE_CENTER", rotation=90 if sh > sw else 0)
+            continue
         block = _equip_block(m, a)
-        sw, sh = at.get("schematic_size", (1.0, 1.0))
         bw, bh = blocks[block].size
         sc = min(sw * k / bw, sh * k / bh)
         c.insert(block, (x, y), "P-EQUIP", scale=sc)
@@ -624,8 +636,7 @@ def layout_placed(m: Model, blocks):
     for conn in pipes:
         a, b = m.asset_of(conn["from"]), m.asset_of(conn["to"])
         attrs = conn.get("attributes") or {}
-        path = attrs.get("schematic_path") or [m.attrs(a)["schematic"],
-                                                m.attrs(b)["schematic"]]
+        path = m.path(conn) or [m.schematic(a)["at"], m.schematic(b)["at"]]
         pts = [P(p) for p in path]
         pts = _trim(pts, half.get(a, 0.0), half.get(b, 0.0))
         if len(pts) < 2:

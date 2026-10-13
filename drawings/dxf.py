@@ -41,8 +41,9 @@ LAYERS: Dict[str, Tuple[int, str, int]] = {
 
 #: Process line layers by service, P-LINE-<SERVICE>, coloured so a reviewer
 #: can follow supply against return. Plots fine in monochrome too.
-SERVICE_COLOURS = {"CHWS": 5, "CHWR": 1, "CWS": 4, "CWR": 6, "TCSS": 5,
-                   "TCSR": 1, "HHWS": 30, "HHWR": 6, "RW": 3, "PW": 4}
+SERVICE_COLOURS = {"CHWS": 5, "CHWR": 1, "CWS": 4, "CWR": 6, "TCSS": 140,
+                   "TCSR": 210, "HTWS": 30, "HTWR": 22, "HHWS": 30, "HHWR": 6,
+                   "RW": 3, "PW": 4}
 
 LINETYPES = {
     # name: (description, pattern) -- pattern is total length then dashes,

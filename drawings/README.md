@@ -90,21 +90,40 @@ left to right.
 
 ### Drawn where the model says
 
-If every asset on a pipe carries `attributes.schematic: [x, y]`, the P&ID
-isn't laid out at all. Each asset is drawn at its position:
+If every asset on a pipe has a `schematic` placement, the P&ID isn't laid
+out at all. Each asset is drawn where the model says:
 
-- **Equipment:** its symbol scaled into `schematic_size`.
-- **Valves:** turned by `schematic_rotation`.
-- **Junctions:** marked `junction: true`, and drawn as nothing but the
-  pipes meeting.
-- **Pipes:** each follows its connection's `schematic_path`, stopping
-  short of the symbols at its ends.
+- **Equipment:** its symbol scaled into `schematic.size`.
+- **Valves and fittings:** turned by `schematic.rotation`.
+- **Tees** (`kind: tee`): drawn as nothing but the pipes meeting.
+- **Assets on no pipe** (racks, say): a labelled outline.
+- **Pipes:** each follows its connection's `schematic.path`, stopping short
+  of the symbols at its ends. Pipe colour comes from its `service`.
 
 A model read back from an existing drawing therefore keeps that drawing's
 arrangement, and comes out in these symbols, tags and layers. Automatic
 layout suits equipment-level models of tens of items. At reference-design
 scale (hundreds of valves and tees) it produces spaghetti, and positions
 are the answer.
+
+```yaml
+assets:
+- id: NRV-1
+  kind: valve
+  attributes: {valve_type: check}
+  schematic: {at: [12.0, 40.0], rotation: 0}
+connections:
+- id: L-101
+  type: pipe
+  from: PMP-1.DISCHARGE
+  to: NRV-1.IN
+  attributes: {service: CHWS}
+  schematic: {path: [[13.5, 40.0], [12.0, 40.0]]}
+```
+
+Valve types drawn: `isolation`, `gate`, `globe`, `ball`, `butterfly`,
+`check`, `control`, `control_3way`, `balancing`. Service layers are
+coloured for CHWS/CHWR, HTWS/HTWR, TCSS/TCSR, CWS/CWR, HHWS/HHWR.
 
 ## The DXF
 

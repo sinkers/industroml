@@ -64,6 +64,31 @@ class Model:
         o = self.assets.get(obj_id) or self.interfaces.get(obj_id) or {}
         return o.get("attributes") or {}
 
+    def schematic(self, asset_id: str) -> Optional[dict]:
+        """{"at", "size", "rotation"} for an asset placed on a schematic.
+
+        Reads the asset's schematic field, or the older attributes
+        (schematic, schematic_size, schematic_rotation) a model may carry.
+        """
+        a = self.assets.get(asset_id) or {}
+        if a.get("schematic"):
+            return a["schematic"]
+        at = (a.get("attributes") or {})
+        if "schematic" in at:
+            out = {"at": at["schematic"]}
+            if "schematic_size" in at:
+                out["size"] = at["schematic_size"]
+            if "schematic_rotation" in at:
+                out["rotation"] = at["schematic_rotation"]
+            return out
+        return None
+
+    def path(self, conn: dict) -> Optional[list]:
+        """A connection's schematic path, if it has one."""
+        if conn.get("schematic"):
+            return conn["schematic"].get("path")
+        return (conn.get("attributes") or {}).get("schematic_path")
+
     def kind(self, asset_id: str) -> str:
         return (self.assets.get(asset_id) or {}).get("kind", "")
 
