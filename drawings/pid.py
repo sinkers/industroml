@@ -234,12 +234,63 @@ def _arrow(c, a, b, layer):
     c.insert("P-ARROW", (mx, my), layer, rotation=rot)
 
 
+def groups(m: Model, lines, equipment) -> List[List[str]]:
+    """Connected systems of equipment, each in model order."""
+    parent = {n: n for n in equipment}
+
+    def find(n):
+        while parent[n] != n:
+            parent[n] = parent[parent[n]]
+            n = parent[n]
+        return n
+
+    for ln in lines:
+        parent[find(ln.src)] = find(ln.dst)
+    out = defaultdict(list)
+    for n in sorted(equipment, key=lambda n: m.order.get(n, 1e9)):
+        out[find(n)].append(n)
+    return list(out.values())
+
+
+def parts(m: Model, blocks):
+    """Each separate system as its own diagram: [(subtitle, canvas, plan)].
+
+    The subtitle names the system by its plant (the chillers, tanks or dry
+    coolers a loop starts from), or by its first piece of equipment.
+    """
+    lines, equipment = collect(m)
+    out = []
+    for members in groups(m, lines, equipment):
+        mine = set(members)
+        plan = Plan(lines=[l for l in lines if l.src in mine])
+        c = _layout_part(m, blocks, plan.lines, mine, plan)
+        kinds = [k for k in START_KINDS if any(m.kind(n) == k
+                                                for n in members)]
+        lead = [n for n in members if kinds and m.kind(n) == kinds[0]] \
+            or members[:1]
+        out.append(("SYSTEM " + ", ".join(lead), c, plan))
+    return out
+
+
 def layout(m: Model, blocks):
+    """Each separate system (a loop, a skid) on its own band, top down."""
     lines, equipment = collect(m)
     plan = Plan(lines=lines)
     if not lines:
         plan.warnings.append("the model has no pipes between assets")
         return Canvas(), plan
+    c, y = Canvas(), 0.0
+    for members in groups(m, lines, equipment):
+        mine = set(members)
+        part = _layout_part(m, blocks, [l for l in lines if l.src in mine],
+                            mine, plan)
+        x0, y0, x1, y1 = part.bounds(blocks)
+        c.extend(part.transformed(-x0, y - y1))
+        y -= (y1 - y0) + 30
+    return c, plan
+
+
+def _layout_part(m: Model, blocks, lines, equipment, plan):
     rank = _rank(m, lines, equipment)
     cols = _order(m, lines, rank)
     c = Canvas()
@@ -391,7 +442,7 @@ def layout(m: Model, blocks):
         else:
             _arrow(c, (b[0] - 6, b[1]), b, layer)
     _place_labels(c, blocks, pending)
-    return c, plan
+    return c
 
 
 def _overlaps(a, b, pad=0.6):

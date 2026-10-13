@@ -207,6 +207,8 @@ class _Layout:
 
     def label_lines(self, n) -> List[str]:
         a = self.m.attrs(n)
+        if self.m.kind(n) in ("offsheet", "offsheet_to"):
+            return [a.get("note", "")]
         lines = [self.m.name(n)]
         r = ", ".join(x for x in (volts(a), rating(a)) if x)
         if r:
@@ -217,7 +219,11 @@ class _Layout:
         if self.is_board(n):
             w = max(text_width(self.m.tag(n), TAG),
                     *(text_width(s, TXT) for s in self.label_lines(n)))
-            return max(2 * w + 16, PITCH)
+            # each further supply lands right of centre, with its device's
+            # rating written beside it
+            extra = sum(1 for f in self.feeds
+                        if f.dst == n and f.kind == "secondary")
+            return max(2 * w + 24 + 26 * extra, PITCH)
         bw = blocks[self.block(n)].size[0]
         if not self.slots[n]:
             n_lines = 1 + len(self.label_lines(n))
@@ -343,8 +349,15 @@ def _rotated_lines(c: Canvas, x, y_start, lines, layer, h=TXT, downward=False):
                align="BOTTOM_RIGHT" if downward else "BOTTOM_LEFT")
 
 
-def layout(m: Model, blocks) -> (Canvas, Plan):
-    feeds = collect(m)
+def layout(m: Model, blocks, feeds: Optional[List[Feed]] = None,
+           refs: Optional[Dict[str, str]] = None) -> (Canvas, Plan):
+    """Lay out feeds (all the model's cables by default) as one diagram.
+
+    refs: board id -> a note drawn under its busbar, used when the board's
+    outgoing circuits are on a sheet of their own.
+    """
+    feeds = collect(m) if feeds is None else feeds
+    refs = refs or {}
     plan = Plan(feeds=feeds)
     if not feeds:
         plan.warnings.append("the model has no cables between assets")
@@ -404,7 +417,8 @@ def layout(m: Model, blocks) -> (Canvas, Plan):
                        if f.dst == n and incomer(n, f.dst_port)), default=0)
             label_h = TAG + 3 + len(L.label_lines(n)) * LINE_GAP
             return (max(inc + 4, label_h + 2)
-                    + max((dev_h(d) for d in outs), default=0) + 6)
+                    + max((dev_h(d) for d in outs), default=0) + 6
+                    + (8 if n in refs else 0))
         h = blocks[L.block(n)].size[1]
         if not L.slots[n]:
             lines = [m.tag(n)] + L.label_lines(n)
@@ -450,8 +464,9 @@ def layout(m: Model, blocks) -> (Canvas, Plan):
             for i, s in enumerate(L.label_lines(n)):
                 c.text((x0 - 2, yt - 2 - TAG - 1.5 - i * LINE_GAP), s, TXT,
                        "E-TEXT", align="TOP_LEFT")
-            if a.get("fault_ka") or a.get("breaking_capacity_ka"):
-                pass
+            if n in refs:
+                c.text(((x0 + x1) / 2, yb - out_h - 7), refs[n], TXT,
+                       "E-TEXT", align="TOP_CENTER")
             port_xy[n] = {"top": (x, yt), "bus": (x0, x1, yb),
                           "inc_h": inc_h}
             enclosure_w[n] = (x0 - 4, x1 + 4)
@@ -539,8 +554,10 @@ def layout(m: Model, blocks) -> (Canvas, Plan):
             if f.kind == "secondary":
                 k = sec_count[dst]
                 sec_count[dst] += 1
+                # other supplies land towards the right-hand end, clear of
+                # the board's name at the left
                 x0, x1, _ = port_xy[dst]["bus"]
-                ex = x0 + 6 + 10 * k if ex - x0 > 20 else x1 - 6 - 10 * k
+                ex = min(ex + 26 * (k + 1), x1 - 20)
         else:
             key = "top2" if f.kind == "secondary" else "top"
             ex, ey = port_xy[dst][key]
@@ -601,6 +618,133 @@ def layout(m: Model, blocks) -> (Canvas, Plan):
 
     return c, plan
 
+
+
+SOURCE_KINDS = ("transformer", "generator", "utility_supply", "ring_main_unit")
+
+
+def _offsheet(kind, prefix, node, port, sheet):
+    tag = f"{prefix} {node} {port}"
+    return {"id": f"{prefix}-{node}-{port}", "kind": kind,
+            "domain": "electrical", "container": "SITE", "name": tag,
+            "attributes": {"tag": tag, "note": f"SHEET {sheet}"}}
+
+
+def split(m: Model, blocks, first_sheet: int = 1, min_feeders: int = 3,
+          size: Optional[str] = None, min_scale: float = 0.6):
+    """The SLD over several sheets. Returns [(subtitle, canvas, plan)].
+
+    A final board, one whose outgoing circuits all end at loads and that
+    has at least min_feeders of them, always gets a sheet of its own; its
+    supplies arrive at off-sheet connectors naming the source and its sheet.
+    Everything above the final boards goes on one overall sheet, where each
+    final board's busbar carries a "see sheet" note. If that overall sheet
+    would print smaller than min_scale (on size, or on A0), it is split
+    again: each main board (one fed straight from a transformer or
+    generator) gets a sheet with its supplies, and feeders to boards drawn
+    on other sheets end at onward off-sheet connectors.
+    """
+    from .sheet import compose
+
+    feeds = collect(m)
+    L = _Layout(m, feeds)
+    out_of = defaultdict(list)
+    for f in feeds:
+        if f.kind != "tie":
+            out_of[f.src].append(f)
+    final = [b for b in L.nodes if L.is_board(b)
+             and len(out_of[b]) >= min_feeders
+             and all(not out_of[f.dst] for f in out_of[b])]
+    final.sort(key=lambda b: m.order.get(b, 1e9))
+
+    def scale(c):
+        _, meta = compose(c, blocks, {}, legend_items(c, blocks), [],
+                          size=size)
+        return meta["scale"]
+
+    def sub_model(extra):
+        return Model({**m.data, "assets": list(m.data.get("assets") or [])
+                      + extra})
+
+    def board_sheets(sheet_of):
+        out = []
+        for b in final:
+            extra, mine = [], []
+            for f in feeds:
+                if f.dst == b and f.kind != "tie":
+                    port = f.src_port.split(".")[-1]
+                    a = _offsheet("offsheet", "FROM", f.src, port,
+                                  sheet_of.get(f.src, first_sheet))
+                    extra.append(a)
+                    mine.append(Feed(a["id"], b, a["id"] + ".OUT",
+                                     f.dst_port, list(f.devices),
+                                     list(f.cables)))
+            mine += [_copy(f) for f in out_of[b]]
+            c, plan = layout(sub_model(extra), blocks, mine)
+            out.append((m.name(b).upper() if m.name(b) != b else b, c, plan))
+        return out
+
+    if not final:
+        c, plan = layout(m, blocks, feeds)
+        return [("", c, plan)]
+
+    # one overall sheet above the final boards
+    sheet_of = {b: first_sheet + 1 + k for k, b in enumerate(final)}
+    overall = [_copy(f) for f in feeds if f.src not in sheet_of]
+    refs = {b: f"OUTGOING CIRCUITS: SEE SHEET {n}"
+            for b, n in sheet_of.items()}
+    c, plan = layout(m, blocks, overall, refs)
+    mains = [b for b in L.nodes if L.is_board(b) and b not in sheet_of
+             and any(m.kind(f.src) in SOURCE_KINDS for f in feeds
+                     if f.dst == b)]
+    mains.sort(key=lambda b: m.order.get(b, 1e9))
+    if scale(c) >= min_scale or len(mains) < 2:
+        return [("OVERALL", c, plan)] + board_sheets(sheet_of)
+
+    # a sheet per main board
+    sheet_of = {b: first_sheet + k for k, b in enumerate(mains)}
+    sheet_of.update({b: first_sheet + len(mains) + k
+                     for k, b in enumerate(final)})
+    parts = []
+    for main in mains:
+        extra, mine, seen = [], [], set()
+
+        def take_up(n):
+            for f in feeds:
+                if f.dst == n and f.kind != "tie" and id(f) not in seen \
+                        and f.src not in sheet_of:
+                    seen.add(id(f))
+                    mine.append(_copy(f))
+                    take_up(f.src)
+
+        def take_down(n):
+            for f in out_of[n]:
+                if id(f) in seen:
+                    continue
+                seen.add(id(f))
+                if f.dst in sheet_of:
+                    port = f.dst_port.split(".")[-1]
+                    a = _offsheet("offsheet_to", "TO", f.dst, port,
+                                  sheet_of[f.dst])
+                    extra.append(a)
+                    mine.append(Feed(f.src, a["id"], f.src_port,
+                                     a["id"] + ".IN", list(f.devices),
+                                     list(f.cables)))
+                else:
+                    mine.append(_copy(f))
+                    take_down(f.dst)
+
+        take_up(main)
+        take_down(main)
+        c, plan = layout(sub_model(extra), blocks, mine)
+        parts.append((m.name(main).upper() if m.name(main) != main
+                      else main, c, plan))
+    return parts + board_sheets(sheet_of)
+
+
+def _copy(f: Feed) -> Feed:
+    return Feed(f.src, f.dst, f.src_port, f.dst_port, list(f.devices),
+                list(f.cables))
 
 def legend_items(canvas: Canvas, blocks):
     used = []

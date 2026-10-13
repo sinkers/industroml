@@ -5,6 +5,8 @@
  "drawings": [
   {
    "kind": "sld",
+   "sheet": 1,
+   "title": "ELECTRICAL SINGLE LINE DIAGRAM",
    "warnings": [],
    "nodes": 5,
    "size": "A2",
@@ -19,6 +21,8 @@
   },
   {
    "kind": "pid",
+   "sheet": 2,
+   "title": "PIPING AND INSTRUMENTATION DIAGRAM",
    "warnings": [],
    "nodes": 3,
    "size": "A3",

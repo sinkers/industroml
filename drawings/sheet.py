@@ -213,20 +213,28 @@ def legend(c: Canvas, x0: float, y1: float, y_min: float,
 
 
 def compose(diagram: Canvas, blocks: Dict[str, Block], info: Dict,
-            legend_items, note_lines: List[str], minimum="A3"):
-    """Put a diagram on the smallest sheet it fits. Returns (canvas, meta)."""
+            legend_items, note_lines: List[str], minimum="A3",
+            size: Optional[str] = None):
+    """Put a diagram on the smallest sheet it fits. Returns (canvas, meta).
+
+    size fixes the sheet (A3 for a set issued at A3, say) and scales the
+    diagram down to fit it if it must.
+    """
     bx0, by0, bx1, by1 = diagram.bounds(blocks)
     ew, eh = max(bx1 - bx0, 1.0), max(by1 - by0, 1.0)
     legend_h = 8.0 * len(legend_items) + 12
     names = [s[0] for s in SIZES]
     start = names.index(minimum) if minimum in names else 0
-    for name, w, h, zx, zy in SIZES[start:]:
+    sizes = [z for z in SIZES if z[0] == size] if size else SIZES[start:]
+    if not sizes:
+        raise ValueError(f"unknown sheet size {size!r}")
+    for name, w, h, zx, zy in sizes:
         x0, y0, x1, y1 = drawing_area((w, h))
         if ew <= x1 - x0 and eh <= y1 - y0 and legend_h <= y1 - y0 + GAP:
             k = 1.0
             break
     else:
-        k = min((x1 - x0) / ew, (y1 - y0) / eh)
+        k = min(1.0, (x1 - x0) / ew, (y1 - y0) / eh)
     size, zones = (w, h), (zx, zy)
     w, h = size
     x0, y0, x1, y1 = drawing_area(size)

@@ -237,3 +237,28 @@ def test_schema_kinds_are_unique_and_include_the_plant_kinds():
     assert len(kinds) == len(set(kinds))
     assert {"chiller", "cdu", "crah", "header", "ring_main_unit",
             "static_transfer_switch", "pdu"} <= set(kinds)
+
+
+def test_fixed_sheet_size_scales_to_fit(blocks):
+    c = Canvas()
+    c.rect((0, 0), (700, 450))
+    _, meta = compose(c, blocks, {"title": "T"}, [], ["n"], size="A3")
+    assert meta["size"] == "A3" and meta["scale"] < 1
+
+
+def test_sld_splits_into_overall_and_board_sheets(blocks):
+    """A board whose feeders all end at loads gets its own sheet."""
+    data = load(DC)
+    m = Model(data)
+    parts = sld.split(m, blocks, min_feeders=2)
+    titles = [t for t, _, _ in parts]
+    assert titles[0] == "OVERALL"
+    assert "MECHANICAL SWITCHBOARD A" in titles
+    overall = parts[0][1]
+    notes = [p.data["text"] for p in overall.prims if p.kind == "text"
+             and p.data["text"].startswith("OUTGOING CIRCUITS")]
+    assert notes
+    mssb = parts[titles.index("MECHANICAL SWITCHBOARD A")][1]
+    incoming = [p for p in mssb.prims if p.kind == "insert"
+                and p.data["block"] == "E-OPC"]
+    assert len(incoming) == 1

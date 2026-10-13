@@ -188,6 +188,12 @@ ELECTRICAL = {
                 [AttDef("LABEL", (0, 0), 2.2, align="MIDDLE_CENTER")]),
     "E-SUPPLY": ("Incoming supply", (6, 14), {"bottom": (0, -7)}, _supply, []),
     "E-EARTH": ("Earth", (6, 8), {"top": (0, 4)}, _earth, []),
+    "E-OPC-TO": ("Off-sheet connection, onward", (12, 10), {"top": (0, 5)},
+                 lambda c: c.polyline([(-6, 5), (6, 5), (6, 0), (0, -5),
+                                       (-6, 0)], closed=True), []),
+    "E-OPC": ("Off-sheet connection", (12, 10), {"bottom": (0, -5)},
+              lambda c: c.polyline([(-6, 5), (6, 5), (6, 0), (0, -5),
+                                    (-6, 0)], closed=True), []),
 }
 
 
@@ -437,7 +443,8 @@ SLD_NODES = {
     "pump": "E-MOTOR", "compressor": "E-MOTOR", "ups": "E-UPS",
     "vfd": "E-VSD", "automatic_transfer_switch": "E-ATS",
     "static_transfer_switch": "E-STS", "ring_main_unit": "E-RMU",
-    "pdu": "E-PDU", "utility_supply": "E-SUPPLY",
+    "pdu": "E-PDU", "utility_supply": "E-SUPPLY", "offsheet": "E-OPC",
+    "offsheet_to": "E-OPC-TO",
 }
 
 #: Device named by an interface's "device" attribute, for the protective

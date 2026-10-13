@@ -23,11 +23,17 @@ def main(argv=None):
     ap.add_argument("--flat", action="store_true",
                     help="explode symbols to plain lines and text (for "
                          "FreeCAD, which drops block attributes)")
+    ap.add_argument("--split", choices=["auto", "always", "never"],
+                    default="auto",
+                    help="SLD over several sheets: auto when one sheet "
+                         "would need A0")
+    ap.add_argument("--sheet", choices=["A3", "A2", "A1", "A0"],
+                    help="issue every sheet at this size, scaling to fit")
     a = ap.parse_args(argv)
     kinds = [k for k, on in (("sld", a.sld), ("pid", a.pid)) if on] or \
         ["sld", "pid"]
     r = draw(a.model, a.out, kinds, plot=not a.no_plot, mono=a.mono,
-             flat=a.flat)
+             flat=a.flat, split=a.split, size=a.sheet)
     for d in r["drawings"]:
         print(d["kind"], d.get("size", ""),
               os.path.join(a.out, d["dxf"]) if "dxf" in d else d["skipped"])

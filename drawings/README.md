@@ -9,6 +9,7 @@ python3 -m drawings examples/models/dc_hall_demo.yaml --out out/
 python3 -m drawings MODEL --sld            # only the SLD
 python3 -m drawings MODEL --pid --no-plot  # only the P&ID, DXF only
 python3 -m drawings MODEL --flat           # plain DXF for FreeCAD
+python3 -m drawings MODEL --sheet A3       # every sheet A3, scaled to fit
 ```
 
 <p align="center">
@@ -32,6 +33,27 @@ The examples are in `examples/outputs/drawings/`. The data hall is invented
 - **Revision table, notes and legend.** The legend lists only the symbols
   and line styles that sheet uses. The last note names the model file and
   its SHA-256, so a sheet can be traced back to the model that made it.
+
+## Sheets in a set
+
+A drawing that won't fit one sheet at a readable size is split, the way a
+drafter would split it. Sheets are numbered across the set (`3 OF 10`), and
+the drawing number takes a sheet suffix (`-03`).
+
+- **SLD.** A *final board* is one whose circuits all end at loads. Each
+  final board gets its own sheet, and its supplies arrive at off-sheet
+  connectors ("FROM MSB-A F-MECH, SHEET 1"). Everything above the final
+  boards goes on an overall sheet, with "OUTGOING CIRCUITS: SEE SHEET n"
+  under each final board's busbar. If the overall sheet would still print
+  below 0.6 scale, each main board (one fed straight from a transformer or
+  generator) gets a sheet of its own, with its supplies, its busway or load
+  feeders, and onward connectors ("TO MSSB-A IN, SHEET 5") to boards on
+  other sheets. By default the SLD splits when a single sheet would need
+  A0; `--split always|never` overrides that.
+- **P&ID.** Separate systems (two independent CHW loops, say) are drawn in
+  their own bands. With `--sheet`, if the combined sheet would print below
+  0.6 scale, each system gets a sheet, named after its plant ("SYSTEM CH-1,
+  CH-2").
 
 ## SLD
 
@@ -85,8 +107,6 @@ left to right.
   beside its line without collision checks. P&ID line numbers avoid
   symbols, labels and headers, but on a crowded sheet one can still touch a
   line.
-- **Sheets.** One sheet per drawing, so a large site goes onto a scaled A0.
-  Splitting per board or per system, with off-sheet connectors, comes next.
 - **Missing from the model.** Port positions on equipment and protection
   settings, so neither is drawn.
 - **Control.** Control loops beyond a bubble's tag (signal lines to the
