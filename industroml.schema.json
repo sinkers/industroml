@@ -84,17 +84,8 @@
         "control_valve_actuator",
         "estop","safety_relay","light_curtain","gas_detector","fire_alarm_panel","smoke_detector",
         "heat_detector","horn_strobe","manual_call_point","safety_plc","interlock_switch",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","ring_main_unit",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","static_transfer_switch",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","pdu",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","utility_supply",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","chiller",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","dry_cooler",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","cooling_tower",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","cdu",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","expansion_tank",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","air_separator",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","header"
+        "ring_main_unit","static_transfer_switch","pdu","utility_supply",
+        "chiller","dry_cooler","cooling_tower","cdu","crah","expansion_tank","air_separator","header"
       ]
     },
     "medium": {

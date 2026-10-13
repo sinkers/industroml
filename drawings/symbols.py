@@ -346,6 +346,17 @@ def _dry_cooler(c):
                 (11, -6), (13, -4)])
 
 
+def _crah_art(c):
+    pts = [(-11, 7)]
+    for i in range(6):
+        pts.append((-11 + (i + 1) * 2, -7 if i % 2 == 0 else 7))
+    c.polyline(pts)                                   # the coil
+    for y in (4.5, -4.5):
+        c.circle((7, y), 4)
+        c.line((4.2, y - 2.8), (9.8, y + 2.8))
+        c.line((4.2, y + 2.8), (9.8, y - 2.8))
+
+
 def _hx_plate(c):
     _plate_art(c, 0, 0, 10, 20)
 
@@ -380,6 +391,8 @@ PROCESS = {
     "P-CHILLER": ("Chiller", (30, 20), {}, _box_with(_chiller_art)),
     "P-CDU": ("Coolant distribution unit", (30, 20), {}, _box_with(_cdu_art)),
     "P-HX": ("Plate heat exchanger", (10, 20), {}, _hx_plate),
+    "P-CRAH": ("Air handler / fan wall, CHW coil", (30, 20), {},
+               _box_with(_crah_art)),
     "P-DRYCOOLER": ("Dry cooler", (30, 28), {}, _dry_cooler),
     "P-EQUIP": ("Equipment", (30, 20), {}, _box_with(lambda c: None)),
     "P-INST": ("Instrument, field mounted", (10, 10), {}, _instrument),
@@ -455,7 +468,7 @@ PID_EQUIPMENT = {
     "air_separator": "P-AIRSEP", "chiller": "P-CHILLER", "cdu": "P-CDU",
     "heat_exchanger": "P-HX", "heat_exchanger_plate": "P-HX",
     "heat_exchanger_shell_tube": "P-HX", "dry_cooler": "P-DRYCOOLER",
-    "cooling_tower": "P-DRYCOOLER",
+    "cooling_tower": "P-DRYCOOLER", "crah": "P-CRAH",
 }
 
 #: Control-domain kinds drawn as ISA bubbles, and their function letters.

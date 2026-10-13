@@ -829,3 +829,7 @@ elements:
     kind: header
     label: Pipe header
     icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: crah
+    label: Air handler or fan wall with a chilled-water coil
+    icon: pid:heat_exchanger

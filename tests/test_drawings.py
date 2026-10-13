@@ -228,3 +228,12 @@ def test_every_example_draws(tmp_path, name):
     assert all(os.path.exists(os.path.join(tmp_path, d["dxf"]))
                for d in r["drawings"]
                if "dxf" in d)
+
+
+def test_schema_kinds_are_unique_and_include_the_plant_kinds():
+    import json
+    with open(os.path.join(ROOT, "industroml.schema.json")) as fh:
+        kinds = json.load(fh)["$defs"]["assetKind"]["enum"]
+    assert len(kinds) == len(set(kinds))
+    assert {"chiller", "cdu", "crah", "header", "ring_main_unit",
+            "static_transfer_switch", "pdu"} <= set(kinds)
