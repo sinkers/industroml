@@ -664,7 +664,7 @@ def to_model(path, variant):
         group = assets[aid]["attributes"]["rack_group"]
         q = assets[aid]["attributes"]["rack_group_at"]
         gid = f"RACK-GROUP-{group.replace('RACKS-', '')}"
-        asset(gid, f"{group.replace('-', ' ').title()}: 8 AI racks (142 kW) "
+        asset(gid, f"Racks {group.replace('RACKS-', '')}: 8 AI racks (142 kW) "
                    f"and 8 networking racks (15 kW)", "load",
               attrs={"ai_racks": 8, "ai_rack_kw": 142, "net_racks": 8,
                      "net_rack_kw": 15, "power_kw": 8 * 142 + 8 * 15,

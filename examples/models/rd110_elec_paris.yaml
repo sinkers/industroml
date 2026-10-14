@@ -877,7 +877,7 @@ assets:
     - 187.03
     - 2.0
 - id: RACK-GROUP-1-16
-  name: 'Racks 1 16: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
+  name: 'Racks 1-16: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
   kind: load
   domain: electrical
   container: SITE
@@ -897,7 +897,7 @@ assets:
     - 30.0
     - 8.0
 - id: RACK-GROUP-17-32
-  name: 'Racks 17 32: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
+  name: 'Racks 17-32: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
   kind: load
   domain: electrical
   container: SITE
@@ -917,7 +917,7 @@ assets:
     - 30.0
     - 8.0
 - id: RACK-GROUP-33-48
-  name: 'Racks 33 48: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
+  name: 'Racks 33-48: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
   kind: load
   domain: electrical
   container: SITE
@@ -937,7 +937,7 @@ assets:
     - 30.0
     - 8.0
 - id: RACK-GROUP-49-64
-  name: 'Racks 49 64: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
+  name: 'Racks 49-64: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
   kind: load
   domain: electrical
   container: SITE
@@ -957,7 +957,7 @@ assets:
     - 30.0
     - 8.0
 - id: RACK-GROUP-65-80
-  name: 'Racks 65 80: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
+  name: 'Racks 65-80: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
   kind: load
   domain: electrical
   container: SITE
@@ -977,7 +977,7 @@ assets:
     - 30.0
     - 8.0
 - id: RACK-GROUP-81-96
-  name: 'Racks 81 96: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
+  name: 'Racks 81-96: 8 AI racks (142 kW) and 8 networking racks (15 kW)'
   kind: load
   domain: electrical
   container: SITE

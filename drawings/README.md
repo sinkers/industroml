@@ -129,7 +129,11 @@ coloured for CHWS/CHWR, HTWS/HTWR, TCSS/TCSR, CWS/CWR, HHWS/HHWR.
 
 `importers/rd110` reads Schneider Electric's public RD110 one-line DXF into
 a model with positions, and the SLD is redrawn in the same arrangement on
-ISO sheets: the IT room on A0, the mechanical plant on A2. See
+ISO sheets: the IT room on A0, the mechanical plant on A2. Each board is
+drawn in a dashed enclosure, interlocked incomers are linked by an ATS, a
+UPS is drawn as its enclosure with cables ending on it, busway stacks drop
+into a rack-group box, and equipment fed from another sheet shows each feed
+as "FROM <board> CB <breaker>". See
 [its README](../importers/rd110/README.md).
 
 <p align="center">

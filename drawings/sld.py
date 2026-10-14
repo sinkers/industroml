@@ -820,6 +820,58 @@ def layout_placed(m: Model, blocks, only=None):
     def P(p):
         return ((p[0] - x0) * k, (p[1] - y0) * k)
 
+    cables = [conn for conn in m.connections if conn.get("type") == "cable"]
+    feeds_in = {}
+    for conn in cables:
+        feeds_in.setdefault(m.asset_of(conn["to"]), []).append(conn)
+
+    # a load fed from a stack of busways (a rack group) is drawn as a box
+    # under the stack, the width of it, with a tap-off drop from each
+    group_box = {}
+    for a in ids:
+        ways = [m.asset_of(f["from"]) for f in feeds_in.get(a, [])]
+        buses = [m.attrs(w).get("bus") for w in ways if m.kind(w) in SLD_BOARDS]
+        if len(buses) > 1 and all(buses):
+            lo = min(min(b[0][0], b[1][0]) for b in buses)
+            hi = max(max(b[0][0], b[1][0]) for b in buses)
+            yb = min(b[0][1] for b in buses)
+            (bx0, by0), (bx1, by1) = P((lo, yb - 18)), P((hi, yb - 8))
+            group_box[a] = (bx0, by0, bx1, by1)
+
+    # each asset's outline on the sheet, for cables to end on
+    outline = {}
+    for a in ids:
+        if a in group_box:
+            bx0, by0, bx1, by1 = group_box[a]
+            outline[a] = ("rect", (bx0, by0), (bx1, by1))
+            continue
+        sch = m.schematic(a)
+        x, y = P(sch["at"])
+        w, h = (v * k for v in sch.get("size", (10, 10)))
+        if m.kind(a) in ("chiller", "cdu", "crah", "generator", "transformer"):
+            outline[a] = ("circle", (x, y), min(w, h) / 2)
+        elif w > 1 and h > 1 and max(w, h) > 6 and m.kind(a) not in SLD_BOARDS:
+            outline[a] = ("rect", (x - w / 2, y - h / 2), (x + w / 2, y + h / 2))
+
+    def to_outline(pts, a):
+        """Carry a cable that stops short of its equipment on to its edge,
+        along its last run."""
+        o = outline.get(a)
+        if not o or len(pts) < 2:
+            return pts
+        (px, py), (qx, qy) = pts[-2], pts[-1]
+        if o[0] == "rect":
+            (lx, ly), (hx, hy) = o[1], o[2]
+            if abs(px - qx) < 1e-6 and lx <= qx <= hx:          # vertical run
+                edge = hy if qy > hy else ly if qy < ly else None
+                if edge is not None and abs(edge - qy) < 12:
+                    return pts + [(qx, edge)]
+            if abs(py - qy) < 1e-6 and ly <= qy <= hy:          # horizontal
+                edge = hx if qx > hx else lx if qx < lx else None
+                if edge is not None and abs(edge - qx) < 12:
+                    return pts + [(edge, qy)]
+        return pts
+
     c = Canvas()
     for a in ids:
         sch = m.schematic(a)
@@ -845,6 +897,10 @@ def layout_placed(m: Model, blocks, only=None):
                     f"{at['fault_ka']}kA" if at.get("fault_ka") else "") if x)
                 c.text((bx1, by + 3.4), r, PLACED_TEXT, "E-TEXT",
                        align="BOTTOM_RIGHT")
+            else:
+                rating = f"  {at['current_a']}A" if at.get("current_a") else ""
+                c.text((bx1 + 1.0, by), m.tag(a) + rating, PLACED_TEXT * 0.9,
+                       "E-TEXT", align="MIDDLE_LEFT")
             continue
         if kind in ("breaker", "acb_breaker", "mccb_breaker", "mcb_breaker"):
             block = "E-ACB" if kind == "acb_breaker" else "E-CB"
@@ -859,6 +915,19 @@ def layout_placed(m: Model, blocks, only=None):
                 c.text((x + 1.0, y + h / 2 - i * PLACED_TEXT * 1.3), s,
                        PLACED_TEXT if i else PLACED_TEXT * 1.05,
                        "E-TAG" if i == 0 else "E-TEXT", align="TOP_LEFT")
+            continue
+        if kind == "ups" and w > 20 and h > 20:
+            # the UPS enclosure as drawn, with the symbol in it: its input,
+            # bypass and output cables end on the enclosure
+            c.rect((x - w / 2, y - h / 2), (x + w / 2, y + h / 2), "E-EQUIP")
+            bw, bh = blocks["E-UPS"].size
+            sc = min(w / bw, h / bh) * 0.45
+            c.insert("E-UPS", (x, y), "E-EQUIP", scale=sc)
+            c.text((x + w / 2 - 1.0, y + h / 2 - 1.0), m.tag(a), 1.5, "E-TAG",
+                   align="TOP_RIGHT")
+            c.text((x + w / 2 - 1.0, y + h / 2 - 3.2),
+                   f"{at.get('model', '')} {at.get('power_kw', 0):g} kW".strip(),
+                   PLACED_TEXT, "E-TEXT", align="TOP_RIGHT")
             continue
         block = {"transformer": "E-TX", "generator": "E-GEN", "ups": "E-UPS",
                  "utility_supply": "E-SUPPLY"}.get(kind)
@@ -884,22 +953,78 @@ def layout_placed(m: Model, blocks, only=None):
                            1.5 if i == 0 else PLACED_TEXT,
                            "E-TAG" if i == 0 else "E-TEXT", align="TOP_LEFT")
             continue
+        if a in group_box:
+            bx0, by0, bx1, by1 = group_box[a]
+            c.rect((bx0, by0), (bx1, by1), "E-EQUIP")
+            name = m.name(a).split(":")[0].upper()
+            c.text(((bx0 + bx1) / 2, (by0 + by1) / 2 + 0.9), name, 1.4,
+                   "E-TAG", align="MIDDLE_CENTER")
+            detail = m.name(a).split(":", 1)[1].strip() if ":" in m.name(a) else ""
+            if at.get("power_kw"):
+                detail += f" = {at['power_kw']:g} kW"
+            c.text(((bx0 + bx1) / 2, (by0 + by1) / 2 - 1.0), detail,
+                   PLACED_TEXT * 0.85, "E-TEXT", align="MIDDLE_CENTER")
+            continue
         # loads: an outline, labelled
-        if w > 1 and h > 1:
-            if kind in ("chiller", "cdu", "crah"):
+        if w > 1 and h > 1 and a in outline:
+            if outline[a][0] == "circle":
                 c.circle((x, y), min(w, h) / 2, "E-EQUIP")
             else:
                 c.rect((x - w / 2, y - h / 2), (x + w / 2, y + h / 2), "E-EQUIP")
-            c.text((x, y), m.tag(a) if kind != "load" else m.name(a)[:28],
-                   min(1.4, max(0.8, w / max(len(m.tag(a)), 1) * 1.3)),
-                   "E-TAG", align="MIDDLE_CENTER")
+            label = m.tag(a) if kind != "load" else m.name(a).upper()
+            size = min(1.4, max(0.7, w / max(len(label), 1) * 1.4))
+            c.text((x, y), label, size, "E-TAG", align="MIDDLE_CENTER")
         else:
+            # a single load: an arrow, its name reading down the sheet
             c.insert("E-LOAD", (x, y), "E-EQUIP", scale=0.5)
-            c.text((x + 1.5, y), m.name(a)[:40], PLACED_TEXT, "E-TEXT",
-                   align="MIDDLE_LEFT", rotation=0)
-    for conn in m.connections:
-        if conn.get("type") != "cable":
+            c.text((x, y - 2.0), m.name(a).upper()[:40], PLACED_TEXT,
+                   "E-TEXT", align="MIDDLE_LEFT", rotation=270)
+
+    # each board in a dashed enclosure around its busbar and devices
+    for a in ids:
+        if m.kind(a) != "switchboard" or not m.attrs(a).get("bus"):
             continue
+        bus = m.attrs(a)["bus"]
+        (bx0, by), (bx1, _) = P(bus[0]), P(bus[1])
+        low, high = by - 1.0, by + 5.5
+        for d in ids:
+            if m.assets[d].get("container") == a:
+                sch = m.schematic(d)
+                dx, dy = P(sch["at"])
+                dh = sch.get("size", (0, 10))[1] * k
+                bx0, bx1 = min(bx0, dx - 1.0), max(bx1, dx + 6.0)
+                low = min(low, dy - dh / 2 - 1.0, dy + dh / 2 - 4.6)
+                high = max(high, dy + dh / 2 + 1.0)
+        c.rect((bx0 - 2.0, low - 1.0), (bx1 + 2.0, high + 1.0), "E-ENCL")
+    # interlocked incomers (an ATS pair): a dashed link between them
+    for a in ids:
+        other = m.attrs(a).get("interlocked_with")
+        if not other or other not in ids or other < a:
+            continue
+        (ax, ay), (ox, oy) = P(m.schematic(a)["at"]), P(m.schematic(other)["at"])
+        mx, my = (ax + ox) / 2, (ay + oy) / 2
+        c.line((ax + 0.8, ay), (mx - 2.5, my), "E-ENCL")
+        c.line((mx + 2.5, my), (ox - 0.8, oy), "E-ENCL")
+        c.rect((mx - 2.5, my - 1.0), (mx + 2.5, my + 1.0), "E-DEVICE")
+        c.text((mx, my), "ATS", PLACED_TEXT * 0.9, "E-TEXT",
+               align="MIDDLE_CENTER")
+
+    def crowded(b, room=60.0):
+        """Another outline beside this one, too close for side labels."""
+        o = outline[b]
+        (bx, by) = o[1] if o[0] == "circle" else \
+            ((o[1][0] + o[2][0]) / 2, (o[1][1] + o[2][1]) / 2)
+        for other, q in outline.items():
+            if other == b:
+                continue
+            (qx, qy) = q[1] if q[0] == "circle" else \
+                ((q[1][0] + q[2][0]) / 2, (q[1][1] + q[2][1]) / 2)
+            if abs(qy - by) < 6 and 0 < abs(qx - bx) < room:
+                return True
+        return False
+
+    side = {}
+    for conn in cables:
         a, b = m.asset_of(conn["from"]), m.asset_of(conn["to"])
         here_a = only is None or a in only
         here_b = only is None or b in only
@@ -909,8 +1034,18 @@ def layout_placed(m: Model, blocks, only=None):
         if not path or len(path) < 2:
             continue
         hv = (conn.get("attributes") or {}).get("voltage_class") == "HV"
-        if here_a and here_b:
-            c.polyline([P(p) for p in path], "E-HV" if hv else "E-LV")
+        if here_a and here_b and b in group_box:
+            # tap-off drop from the busway into the rack group box
+            bx0, by0, bx1, by1 = group_box[b]
+            bus = m.attrs(a).get("bus")
+            n = len(feeds_in[b])
+            i = [m.asset_of(f["from"]) for f in feeds_in[b]].index(a)
+            xi = bx0 + (bx1 - bx0) * (0.3 + 0.4 * i / max(n - 1, 1))
+            c.line((xi, P(bus[0])[1]), (xi, by1), "E-LV")
+            c.circle((xi, P(bus[0])[1]), 0.35, "E-LV")
+        elif here_a and here_b:
+            c.polyline(to_outline([P(p) for p in path], b),
+                       "E-HV" if hv else "E-LV")
         elif here_a:
             # a feed to another sheet: drawn to where the drawing stops it,
             # with an arrow and where it goes
@@ -919,4 +1054,41 @@ def layout_placed(m: Model, blocks, only=None):
             c.insert("E-LOAD", pts[-1], "E-EQUIP", scale=0.35)
             c.text((pts[-1][0] + 0.6, pts[-1][1] - 2.2), f"TO {m.tag(b)}",
                    PLACED_TEXT * 0.9, "E-TEXT", align="TOP_LEFT", rotation=90)
+        else:
+            # fed from another sheet: an incoming stub on the equipment,
+            # first feed from the left, the next from the right
+            o = outline.get(b)
+            if not o:
+                continue
+            n = side.get(b, 0)
+            side[b] = n + 1
+            if o[0] == "circle":
+                (cx, cy), r = o[1], o[2]
+                lx, hx = cx - r, cx + r
+            else:
+                (lx, cy0), (hx, cy1) = o[1], o[2]
+                cx, cy = (lx + hx) / 2, (cy0 + cy1) / 2
+            sgn = -1 if n % 2 == 0 else 1
+            board = m.assets[a].get("container")
+            src = f"FROM {m.name(board).upper()}" if board in m.assets else "FROM"
+            cb = f"CB {m.attrs(a).get('designation', m.tag(a))}"
+            if crowded(b):
+                # neighbours either side: come in from below, the text
+                # reading down the sheet
+                r = (hx - lx) / 2
+                sx = cx + sgn * r * 0.45
+                sy = cy - (r * 0.9 if o[0] == "circle" else (cy - o[1][1]))
+                c.line((sx, sy), (sx, sy - 5.0), "E-LV")
+                c.text((sx, sy - 5.6), f"{src} {cb}", PLACED_TEXT * 0.8,
+                       "E-TEXT", align="MIDDLE_LEFT", rotation=270)
+                continue
+            edge = lx if sgn < 0 else hx
+            end = edge + sgn * 6.0
+            c.line((end, cy), (edge, cy), "E-LV")
+            c.text((end + sgn * 0.6, cy + 0.6), src,
+                   PLACED_TEXT * 0.85, "E-TEXT",
+                   align="BOTTOM_RIGHT" if sgn < 0 else "BOTTOM_LEFT")
+            c.text((end + sgn * 0.6, cy - 0.6), cb,
+                   PLACED_TEXT * 0.85, "E-TEXT",
+                   align="TOP_RIGHT" if sgn < 0 else "TOP_LEFT")
     return c, plan
