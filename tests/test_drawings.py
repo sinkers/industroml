@@ -367,6 +367,14 @@ def test_schematic_fields_validate_and_draw(tmp_path, blocks):
     assert any(p.layer == "P-LINE-HTWS" for p in canvas.prims)
 
 
+def test_placed_pipes_show_their_size(blocks):
+    m = _placed_model()
+    m.connections[0]["attributes"]["dn_mm"] = 150
+    canvas, _ = pid.layout(m, blocks)
+    texts = [p.data["text"] for p in canvas.prims if p.kind == "text"]
+    assert "DN150" in texts
+
+
 def test_bad_role_is_rejected():
     import json
     import jsonschema

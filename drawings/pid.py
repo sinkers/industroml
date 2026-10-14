@@ -645,8 +645,17 @@ def layout_placed(m: Model, blocks):
         c.polyline(pts, layer)
         seg = max(zip(pts, pts[1:]), key=lambda s: abs(s[1][0] - s[0][0])
                   + abs(s[1][1] - s[0][1]))
-        if abs(seg[1][0] - seg[0][0]) + abs(seg[1][1] - seg[0][1]) > 12:
+        length = abs(seg[1][0] - seg[0][0]) + abs(seg[1][1] - seg[0][1])
+        if length > 12:
             _arrow(c, *seg, layer)
+        if attrs.get("dn_mm") and length > 24:
+            # the size, beside the run, a little way along from the arrow
+            (x0_, y0_), (x1_, y1_) = seg
+            mx, my = x0_ + (x1_ - x0_) * 0.3, y0_ + (y1_ - y0_) * 0.3
+            vertical = abs(x1_ - x0_) < abs(y1_ - y0_)
+            c.text((mx - 0.8, my) if vertical else (mx, my + 0.8),
+                   f"DN{attrs['dn_mm']}", 1.4, "P-LINE-TEXT",
+                   align="BOTTOM_CENTER", rotation=90 if vertical else 0)
     return c, plan
 
 
