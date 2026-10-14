@@ -765,3 +765,158 @@ def legend_items(canvas: Canvas, blocks):
         items.append(("Switchboard enclosure", None,
                       {"layer": "E-ENCL", "linetype": "DASHED"}))
     return items
+
+
+# ---------------------------------------------------------------- placed
+
+PLACED_SLD_MM = 0.38        # sheet mm per schematic unit (RD110 one-line)
+PLACED_TEXT = 1.15
+
+
+def placed(m: Model) -> bool:
+    """True when every asset on a cable has a schematic placement."""
+    ends = {m.asset_of(c.get(k, "")) for c in m.connections
+            if c.get("type") == "cable" for k in ("from", "to")}
+    ends.discard(None)
+    return bool(ends) and all(m.schematic(a) for a in ends)
+
+
+def placed_parts(m: Model, blocks, gap=300.0):
+    """The placed diagram split where the drawing has separate sheets side
+    by side: clusters of assets more than `gap` units apart in x."""
+    ids = sorted((a for a in m.assets if m.schematic(a)),
+                 key=lambda a: m.schematic(a)["at"][0])
+    groups, cur, last = [], [], None
+    for a in ids:
+        x = m.schematic(a)["at"][0]
+        if last is not None and x - last > gap:
+            groups.append(cur)
+            cur = []
+        cur.append(a)
+        last = x
+    if cur:
+        groups.append(cur)
+    out = []
+    for g in groups:
+        c, plan = layout_placed(m, blocks, set(g))
+        # name the part after its boards
+        boards = sorted(m.name(a) for a in g if m.kind(a) == "switchboard")
+        title = "IT ROOM" if any("IT " in b.upper() for b in boards) else \
+            "MECHANICAL" if boards else ""
+        out.append((title, c, plan))
+    return out
+
+
+def layout_placed(m: Model, blocks, only=None):
+    """Draw every asset where its schematic placement says."""
+    plan = Plan()
+    ids = [a for a in m.assets if m.schematic(a) and (only is None or a in only)]
+    if not ids:
+        return Canvas(), plan
+    k = PLACED_SLD_MM
+    x0 = min(m.schematic(a)["at"][0] for a in ids)
+    y0 = min(m.schematic(a)["at"][1] for a in ids)
+
+    def P(p):
+        return ((p[0] - x0) * k, (p[1] - y0) * k)
+
+    c = Canvas()
+    for a in ids:
+        sch = m.schematic(a)
+        x, y = P(sch["at"])
+        w, h = sch.get("size", (10, 10))
+        w, h = w * k, h * k
+        kind = m.kind(a)
+        at = m.attrs(a)
+        plan.nodes[a] = {"x": x, "y": y, "kind": kind}
+        if kind in SLD_BOARDS:
+            bus = at.get("bus")
+            (bx0, by), (bx1, _) = (P(bus[0]), P(bus[1])) if bus else \
+                ((x - w / 2, y), (x + w / 2, y))
+            c.polyline([(bx0, by), (bx1, by)], "E-BUSBAR",
+                       width=0.6 if kind == "switchboard" else 0.45)
+            if kind == "switchboard":
+                c.text((bx1, by + 1.2), m.name(a).upper(), 1.8, "E-TAG",
+                       align="BOTTOM_RIGHT")
+                r = ", ".join(x for x in (
+                    f"{at['current_a']}A" if at.get("current_a") else "",
+                    f"{at['voltage_v']}V" if at.get("voltage_v") else "",
+                    at.get("earthing", ""),
+                    f"{at['fault_ka']}kA" if at.get("fault_ka") else "") if x)
+                c.text((bx1, by + 3.4), r, PLACED_TEXT, "E-TEXT",
+                       align="BOTTOM_RIGHT")
+            continue
+        if kind in ("breaker", "acb_breaker", "mccb_breaker", "mcb_breaker"):
+            block = "E-ACB" if kind == "acb_breaker" else "E-CB"
+            bh = blocks[block].size[1]
+            c.insert(block, (x, y), "E-DEVICE", scale=h / bh)
+            lines = [at.get("designation", m.tag(a))]
+            if at.get("frame_a"):
+                lines.append(f"{at['frame_a']}AF")
+            if at.get("trip_a"):
+                lines.append(f"{at['trip_a']}AT")
+            for i, s in enumerate(lines):
+                c.text((x + 1.0, y + h / 2 - i * PLACED_TEXT * 1.3), s,
+                       PLACED_TEXT if i else PLACED_TEXT * 1.05,
+                       "E-TAG" if i == 0 else "E-TEXT", align="TOP_LEFT")
+            continue
+        block = {"transformer": "E-TX", "generator": "E-GEN", "ups": "E-UPS",
+                 "utility_supply": "E-SUPPLY"}.get(kind)
+        if block:
+            bw, bh = blocks[block].size
+            sc = min(w / bw, h / bh)
+            c.insert(block, (x, y), "E-EQUIP", scale=sc)
+            notes = [m.tag(a)]
+            if kind == "transformer":
+                notes += [f"{at.get('power_kva', '')} kVA",
+                          f"{at.get('primary_voltage_v', 0) / 1000:g} kV / "
+                          f"{at.get('secondary_voltage_v', '')} V",
+                          f"{at.get('vector_group', '')} "
+                          f"{at.get('impedance_pct', '')}% Z"]
+            elif kind == "generator":
+                notes += [f"{at.get('power_kw', '')} kW / "
+                          f"{at.get('power_kva', '')} kVA"]
+            elif kind == "ups":
+                notes += [f"{at.get('model', '')} {at.get('power_kw', '')} kW"]
+            if kind != "utility_supply":
+                for i, s in enumerate(notes):
+                    c.text((x + w / 2 + 1.5, y + h / 2 - i * 1.8), s,
+                           1.5 if i == 0 else PLACED_TEXT,
+                           "E-TAG" if i == 0 else "E-TEXT", align="TOP_LEFT")
+            continue
+        # loads: an outline, labelled
+        if w > 1 and h > 1:
+            if kind in ("chiller", "cdu", "crah"):
+                c.circle((x, y), min(w, h) / 2, "E-EQUIP")
+            else:
+                c.rect((x - w / 2, y - h / 2), (x + w / 2, y + h / 2), "E-EQUIP")
+            c.text((x, y), m.tag(a) if kind != "load" else m.name(a)[:28],
+                   min(1.4, max(0.8, w / max(len(m.tag(a)), 1) * 1.3)),
+                   "E-TAG", align="MIDDLE_CENTER")
+        else:
+            c.insert("E-LOAD", (x, y), "E-EQUIP", scale=0.5)
+            c.text((x + 1.5, y), m.name(a)[:40], PLACED_TEXT, "E-TEXT",
+                   align="MIDDLE_LEFT", rotation=0)
+    for conn in m.connections:
+        if conn.get("type") != "cable":
+            continue
+        a, b = m.asset_of(conn["from"]), m.asset_of(conn["to"])
+        here_a = only is None or a in only
+        here_b = only is None or b in only
+        if not (here_a or here_b):
+            continue
+        path = m.path(conn)
+        if not path or len(path) < 2:
+            continue
+        hv = (conn.get("attributes") or {}).get("voltage_class") == "HV"
+        if here_a and here_b:
+            c.polyline([P(p) for p in path], "E-HV" if hv else "E-LV")
+        elif here_a:
+            # a feed to another sheet: drawn to where the drawing stops it,
+            # with an arrow and where it goes
+            pts = [P(p) for p in path]
+            c.polyline(pts, "E-LV")
+            c.insert("E-LOAD", pts[-1], "E-EQUIP", scale=0.35)
+            c.text((pts[-1][0] + 0.6, pts[-1][1] - 2.2), f"TO {m.tag(b)}",
+                   PLACED_TEXT * 0.9, "E-TEXT", align="TOP_LEFT", rotation=90)
+    return c, plan

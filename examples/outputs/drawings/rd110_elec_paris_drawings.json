@@ -1,0 +1,39 @@
+{
+ "model": "rd110_elec_paris.yaml",
+ "sha256": "39e1b016e4fee458b1d7133b935931ac1a675f71ade36eec78611ae5ad370a7e",
+ "generator": "industroml drawings 0.1.0",
+ "drawings": [
+  {
+   "kind": "sld",
+   "sheet": 1,
+   "title": "ELECTRICAL SINGLE LINE DIAGRAM - IT ROOM",
+   "warnings": [],
+   "nodes": 201,
+   "size": "A0",
+   "paper_mm": [
+    1189.0,
+    841.0
+   ],
+   "scale": 1.0,
+   "dxf": "rd110_elec_paris_sld_01.dxf",
+   "pdf": "rd110_elec_paris_sld_01.pdf",
+   "png": "rd110_elec_paris_sld_01.png"
+  },
+  {
+   "kind": "sld",
+   "sheet": 2,
+   "title": "ELECTRICAL SINGLE LINE DIAGRAM - MECHANICAL",
+   "warnings": [],
+   "nodes": 95,
+   "size": "A2",
+   "paper_mm": [
+    594.0,
+    420.0
+   ],
+   "scale": 1.0,
+   "dxf": "rd110_elec_paris_sld_02.dxf",
+   "pdf": "rd110_elec_paris_sld_02.pdf",
+   "png": "rd110_elec_paris_sld_02.png"
+  }
+ ]
+}

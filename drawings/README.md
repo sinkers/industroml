@@ -125,6 +125,17 @@ Valve types drawn: `isolation`, `gate`, `globe`, `ball`, `butterfly`,
 `check`, `control`, `control_3way`, `balancing`. Service layers are
 coloured for CHWS/CHWR, HTWS/HTWR, TCSS/TCSR, CWS/CWR, HHWS/HHWR.
 
+### Read back from an existing drawing
+
+`importers/rd110` reads Schneider Electric's public RD110 one-line DXF into
+a model with positions, and the SLD is redrawn in the same arrangement on
+ISO sheets: the IT room on A0, the mechanical plant on A2. See
+[its README](../importers/rd110/README.md).
+
+<p align="center">
+  <img src="../examples/outputs/drawings/rd110_elec_paris_sld_02.png" alt="Redrawn single line diagram of the RD110 mechanical plant: two transformers and generators feeding mechanical switchboards A and B, chillers and HT chillers, Galaxy VL UPS and the critical boards feeding CDUs" width="100%">
+</p>
+
 ## The DXF
 
 - **Format.** AutoCAD 2013 (AC1027), millimetres, drawn full size in model

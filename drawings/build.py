@@ -98,7 +98,13 @@ def draw(model_path: str, out_dir: str, kinds=("sld", "pid"),
                                        "nothing to draw",
                                        "warnings": plan.warnings})
             continue
-        if kind == "sld" and split != "never":
+        if kind == "sld" and sld.placed(m):
+            parts = sld.placed_parts(m, blocks)
+            if len(parts) > 1:
+                jobs += [(kind, sub, c, p) for sub, c, p in parts]
+                continue
+            diagram, plan = parts[0][1], parts[0][2]
+        elif kind == "sld" and split != "never":
             _, fit = compose(diagram, blocks, {},
                              sld.legend_items(diagram, blocks), [])
             if (split == "always" or fit["size"] == "A0"

@@ -95,7 +95,7 @@
         "heat_detector","horn_strobe","manual_call_point","safety_plc","interlock_switch",
         "ring_main_unit","static_transfer_switch","pdu","utility_supply",
         "chiller","dry_cooler","cooling_tower","cdu","crah","expansion_tank","air_separator","header",
-        "tee","flexible_connection"
+        "tee","flexible_connection","load"
       ]
     },
     "medium": {

@@ -841,3 +841,7 @@ elements:
     kind: flexible_connection
     label: Flexible connection or bellows
     icon: pid:valve
+  - domain: electrical
+    kind: load
+    label: Electrical load, or a group of loads drawn as one
+    icon: sld:motor
