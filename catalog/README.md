@@ -1,6 +1,6 @@
 # Catalog
 
-This directory contains the IndustrialML master catalogue and icon assets.
+This directory contains the IndustroML master catalogue and icon assets.
 
 - `master_catalog.yaml` — base element and connector types, with default attributes and typical interfaces.
 - `icon_map.yaml` — mapping from logical icon keys to SVG files under `icons/`.

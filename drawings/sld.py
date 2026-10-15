@@ -1,0 +1,1094 @@
+"""Electrical single line diagram from an IndustroML model.
+
+Every cable in the model is a line on the diagram. Boards (switchboards,
+MCCs, distribution boards) are drawn as busbars inside a dashed enclosure,
+with each feeder dropping from the busbar through its protective device to
+the next board or the load. Supply is at the top and load at the bottom.
+
+How the model maps onto the drawing:
+
+- A board's outgoing interface with a ``device`` attribute (acb, cb, mccb,
+  mcb, fuse, switch_fuse, isolator) or a current rating gets that protective
+  device drawn at the busbar, labelled with the rating. A board's incoming
+  interface does the same at the top of its enclosure.
+- Assets of a switching kind (breaker, fuse, isolator, CT, meter) with one
+  cable in and one out are drawn inline on the feeder, not as nodes.
+- A node fed from more than one place (a UPS with A and B inputs, an ATS)
+  is drawn under its nearest supply; the other feeds are routed across to it.
+- A cable between two boards that already have their own supplies is a bus
+  tie, drawn between the busbars when they sit side by side.
+- Cable text is the connection id, construction (runs, cores, size,
+  conductor, insulation, earth) and length, beside the line.
+"""
+from __future__ import annotations
+
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+
+from .canvas import Canvas, text_width
+from .model import Model, cable_spec, rating, volts
+from .symbols import SLD_BOARDS, SLD_DEVICE, SLD_INLINE, SLD_NODES
+
+PITCH = 26.0            # width of one feeder column, mm
+TXT = 2.0               # cable and description text height
+TAG = 3.0               # tag text height
+LINE_GAP = TXT * 1.35
+
+
+@dataclass
+class Feed:
+    src: str
+    dst: str
+    src_port: str
+    dst_port: str
+    devices: List[str]
+    cables: List[dict]
+    kind: str = "primary"          # primary, secondary, tie
+    lane: int = 0
+
+
+@dataclass
+class Plan:
+    """Everything the layout decided, kept for tests and the agent."""
+    nodes: Dict[str, dict] = field(default_factory=dict)
+    feeds: List[Feed] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+
+
+def _is_hv(m: Model, feed: Feed) -> bool:
+    for c in feed.cables:
+        for end in (c.get("from"), c.get("to")):
+            i = m.interfaces.get(end) or {}
+            if i.get("medium") == "ac_hv_3ph":
+                return True
+            v = (i.get("attributes") or {}).get("voltage_v")
+            if isinstance(v, (int, float)) and v > 1000:
+                return True
+        v = (c.get("attributes") or {}).get("voltage_v")
+        if isinstance(v, (int, float)) and v > 1000:
+            return True
+    return False
+
+
+def collect(m: Model) -> List[Feed]:
+    """Cables, joined through inline devices into feeds between nodes."""
+    cables = [c for c in m.connections if c.get("type") == "cable"]
+    outs, ins = defaultdict(list), defaultdict(list)
+    for c in cables:
+        a, b = m.asset_of(c.get("from", "")), m.asset_of(c.get("to", ""))
+        if not a or not b or a == b:
+            continue
+        outs[a].append(c)
+        ins[b].append(c)
+    nodes = set(outs) | set(ins)
+    inline = {n for n in nodes if m.kind(n) in SLD_INLINE
+              and len(ins[n]) == 1 and len(outs[n]) == 1}
+    feeds = []
+    for c in cables:
+        a = m.asset_of(c.get("from", ""))
+        b = m.asset_of(c.get("to", ""))
+        if not a or not b or a == b or a in inline:
+            continue
+        devs, chain, cur, seen = [], [c], b, set()
+        while cur in inline and cur not in seen:
+            seen.add(cur)
+            devs.append(cur)
+            nxt = outs[cur][0]
+            chain.append(nxt)
+            cur = m.asset_of(nxt["to"])
+        feeds.append(Feed(a, cur, c["from"], chain[-1]["to"], devs, chain))
+    return feeds
+
+
+def _classify(m: Model, feeds: List[Feed]):
+    """Mark ties and secondary feeds; return ranks and primary children."""
+    boards = {n for f in feeds for n in (f.src, f.dst)
+              if m.kind(n) in SLD_BOARDS}
+    incoming = defaultdict(list)
+    for f in feeds:
+        incoming[f.dst].append(f)
+    for f in feeds:
+        if f.src in boards and f.dst in boards:
+            named = any("TIE" in p.upper() for p in (f.src_port, f.dst_port))
+            flagged = any((c.get("attributes") or {}).get("tie")
+                          for c in f.cables)
+            other = [g for g in incoming[f.dst] if g is not f
+                     and g.src not in boards]
+            if named or flagged or other:
+                f.kind = "tie"
+    dag = [f for f in feeds if f.kind != "tie"]
+    nodes = sorted({n for f in feeds for n in (f.src, f.dst)},
+                   key=lambda n: m.order.get(n, 1e9))
+    outs = defaultdict(list)
+    indeg = defaultdict(int)
+    for f in dag:
+        outs[f.src].append(f)
+        indeg[f.dst] += 1
+    # break cycles: a feed back to something still being walked is secondary
+    state = {}
+
+    def walk(n):
+        state[n] = 1
+        for f in outs[n]:
+            s = state.get(f.dst)
+            if s == 1:
+                f.kind = "secondary"
+            elif s is None:
+                walk(f.dst)
+        state[n] = 2
+
+    for n in nodes:
+        if indeg[n] == 0 and n not in state:
+            walk(n)
+    for n in nodes:
+        if n not in state:
+            walk(n)
+    dag = [f for f in dag if f.kind == "primary"]
+    rank = {n: 0 for n in nodes}
+    changed = True
+    guard = 0
+    while changed and guard < len(nodes) + 2:
+        changed, guard = False, guard + 1
+        for f in dag:
+            if rank[f.dst] < rank[f.src] + 1:
+                rank[f.dst] = rank[f.src] + 1
+                changed = True
+    # one primary supply per node: the nearest one above it
+    by_dst = defaultdict(list)
+    for f in dag:
+        by_dst[f.dst].append(f)
+    for dst, fs in by_dst.items():
+        fs.sort(key=lambda f: (-rank[f.src], m.order.get(f.src, 1e9)))
+        for f in fs[1:]:
+            f.kind = "secondary"
+    return nodes, rank
+
+
+class _Layout:
+    def __init__(self, m: Model, feeds: List[Feed]):
+        self.m = m
+        self.feeds = feeds
+        self.nodes, self.rank = _classify(m, feeds)
+        self.slots = defaultdict(list)     # src -> feeds needing a column
+        self.parent = {}
+        for f in feeds:
+            if f.kind == "primary":
+                self.slots[f.src].append(f)
+                self.parent[f.dst] = f
+            elif f.kind == "secondary":
+                self.slots[f.src].append(f)
+        self.x: Dict[str, float] = {}
+        self.slot_x: Dict[int, float] = {}
+        self.w_cache: Dict[str, float] = {}
+        # a source that nothing feeds and that only feeds the alternate
+        # input of something (a generator into an ATS) is drawn beside
+        # that thing's main supply, a level above it
+        fed = {f.dst for f in feeds if f.kind != "tie"}
+        n_out = defaultdict(int)
+        for f in feeds:
+            if f.kind != "tie":
+                n_out[f.src] += 1
+        self.side = defaultdict(list)
+        self.side_src = set()
+        for f in feeds:
+            if (f.kind == "secondary" and f.src not in fed
+                    and n_out[f.src] == 1 and not self.is_board(f.src)):
+                self.side[f.dst].append(f)
+                self.side_src.add(f.src)
+                self.rank[f.src] = max(0, self.rank[f.dst] - 1)
+
+    # ---- sizes
+    def is_board(self, n):
+        return self.m.kind(n) in SLD_BOARDS
+
+    def block(self, n):
+        return SLD_NODES.get(self.m.kind(n), "E-EQUIP")
+
+    def label_lines(self, n) -> List[str]:
+        a = self.m.attrs(n)
+        if self.m.kind(n) in ("offsheet", "offsheet_to"):
+            return [a.get("note", "")]
+        lines = [self.m.name(n)]
+        r = ", ".join(x for x in (volts(a), rating(a)) if x)
+        if r:
+            lines.append(r)
+        return lines
+
+    def own_width(self, n, blocks) -> float:
+        if self.is_board(n):
+            w = max(text_width(self.m.tag(n), TAG),
+                    *(text_width(s, TXT) for s in self.label_lines(n)))
+            # each further supply lands right of centre, with its device's
+            # rating written beside it
+            extra = sum(1 for f in self.feeds
+                        if f.dst == n and f.kind == "secondary")
+            return max(2 * w + 24 + 26 * extra, PITCH)
+        bw = blocks[self.block(n)].size[0]
+        if not self.slots[n]:
+            n_lines = 1 + len(self.label_lines(n))
+            return max(PITCH, bw + 6, n_lines * LINE_GAP + 8)
+        w = max(text_width(s, TXT) for s in [self.m.tag(n)]
+                + self.label_lines(n))
+        return bw + 2 * (w + 4)
+
+    def side_width(self, g, blocks) -> float:
+        bw = blocks[self.block(g)].size[0]
+        w = max(text_width(s, TXT) for s in [self.m.tag(g)]
+                + self.label_lines(g))
+        return bw + w + 14
+
+    def main_width(self, n, blocks) -> float:
+        total = 0.0
+        for f in self.slots[n]:
+            total += (self.width(f.dst, blocks) if f.kind == "primary"
+                      else PITCH)
+        return max(total, self.own_width(n, blocks))
+
+    def width(self, n, blocks) -> float:
+        if n in self.w_cache:
+            return self.w_cache[n]
+        self.w_cache[n] = PITCH          # guards a cycle the walk missed
+        w = self.main_width(n, blocks) + sum(
+            self.side_width(f.src, blocks) for f in self.side[n])
+        self.w_cache[n] = w
+        return w
+
+    def place(self, n, left, blocks):
+        w = self.main_width(n, blocks)
+        gx = left + w
+        for f in self.side[n]:
+            sw = self.side_width(f.src, blocks)
+            self.x[f.src] = gx + 8
+            self.slot_x[id(f)] = gx + 8
+            gx += sw
+        slots = self.slots[n]
+        total = sum(self.width(f.dst, blocks) if f.kind == "primary" else PITCH
+                    for f in slots)
+        start = left + (w - total) / 2
+        xs = []
+        for f in slots:
+            if f.kind == "primary":
+                self.place(f.dst, start, blocks)
+                sx = self.x[f.dst]
+                start += self.width(f.dst, blocks)
+            else:
+                sx = start + PITCH / 2
+                start += PITCH
+            self.slot_x[id(f)] = sx
+            xs.append(sx)
+        if not xs:
+            self.x[n] = left + w / 2
+        elif len(xs) == 1 and not self.is_board(n):
+            self.x[n] = xs[0]
+        else:
+            self.x[n] = (min(xs) + max(xs)) / 2
+
+
+def _device_for_port(m: Model, port: str) -> Optional[tuple]:
+    """(block, tag, rating) for the protective device on a board port."""
+    i = m.interfaces.get(port) or {}
+    a = i.get("attributes") or {}
+    dev = a.get("device")
+    amps = a.get("rating_a", a.get("trip_a", a.get("current_a")))
+    if dev in (None, "") and amps is None:
+        return None
+    if dev in ("none", False):
+        return None
+    block = SLD_DEVICE.get(str(dev or "cb").lower(), "E-CB")
+    parts = []
+    if amps is not None:
+        parts.append(f"{amps:g}A" if isinstance(amps, float) else f"{amps}A")
+    if a.get("poles"):
+        parts.append(f"{a['poles']}P")
+    if a.get("breaking_capacity_ka"):
+        parts.append(f"{a['breaking_capacity_ka']}kA")
+    tag = a.get("tag") or port.split(".", 1)[-1]
+    return block, tag, " ".join(parts)
+
+
+def _inline_device(m: Model, asset: str) -> tuple:
+    a = m.attrs(asset)
+    block = SLD_INLINE.get(m.kind(asset), "E-CB")
+    amps = a.get("rating_a", a.get("current_a"))
+    parts = []
+    if amps is not None:
+        parts.append(f"{amps}A")
+    if a.get("curve"):
+        parts.append(f"C{a['curve']}" if len(str(a["curve"])) == 1
+                     else str(a["curve"]))
+    if a.get("breaking_capacity_ka"):
+        parts.append(f"{a['breaking_capacity_ka']}kA")
+    if a.get("ratio"):
+        parts.append(str(a["ratio"]))
+    return block, m.tag(asset), " ".join(parts)
+
+
+def _dev_attribs(block, tag, rate, blocks):
+    tags = {d.tag for d in blocks[block].attdefs}
+    out = {}
+    if "TAG" in tags:
+        out["TAG"] = tag
+    if "RATING" in tags:
+        out["RATING"] = rate
+    if "RATIO" in tags:
+        out["RATIO"] = rate or tag
+    return out
+
+
+def _rotated_lines(c: Canvas, x, y_start, lines, layer, h=TXT, downward=False):
+    """Text lines turned 90 degrees, stacked to the right of x.
+
+    Reads upwards from y_start, or ends at y_start reading upwards when
+    downward is set (so the text hangs below a point).
+    """
+    for i, s in enumerate(lines):
+        hh = TAG if (i == 0 and downward) else h
+        xi = x + hh + i * (h * 1.35) + (TAG - h if (downward and i) else 0)
+        c.text((xi, y_start), s, hh, layer, rotation=90,
+               align="BOTTOM_RIGHT" if downward else "BOTTOM_LEFT")
+
+
+def layout(m: Model, blocks, feeds: Optional[List[Feed]] = None,
+           refs: Optional[Dict[str, str]] = None) -> (Canvas, Plan):
+    """Lay out feeds (all the model's cables by default) as one diagram.
+
+    refs: board id -> a note drawn under its busbar, used when the board's
+    outgoing circuits are on a sheet of their own.
+    """
+    feeds = collect(m) if feeds is None else feeds
+    refs = refs or {}
+    plan = Plan(feeds=feeds)
+    if not feeds:
+        plan.warnings.append("the model has no cables between assets")
+        return Canvas(), plan
+    L = _Layout(m, feeds)
+    rank, nodes = L.rank, L.nodes
+
+    # x: each root tree in model order, side by side
+    roots = [n for n in nodes if n not in L.parent and n not in L.side_src]
+    left = 0.0
+    for r in roots:
+        if r in L.x:
+            continue
+        L.place(r, left, blocks)
+        left += L.width(r, blocks) + 10
+
+    # what each feed needs vertically
+    def devs(f):
+        out = []
+        d = _device_for_port(m, f.src_port) if L.is_board(f.src) else None
+        if d:
+            out.append(d)
+        out.extend(_inline_device(m, a) for a in f.devices)
+        return out
+
+    def incomer(n, port):
+        return _device_for_port(m, port) if L.is_board(n) else None
+
+    def dev_h(ds):
+        return sum(blocks[b].size[1] + 3 for b, _, _ in ds)
+
+    def label_len(f):
+        return max(text_width(s, TXT) for s in cable_spec(f.cables[-1]))
+
+    max_rank = max(rank.values())
+    band = defaultdict(float)          # space above a rank's top
+    lanes = defaultdict(int)           # secondary feeds routed into a rank
+    for f in feeds:
+        if f.kind == "tie":
+            continue
+        r = rank[f.dst]
+        # a board's outgoing devices sit inside its enclosure, counted there
+        own = 0 if L.is_board(f.src) else dev_h(devs(f))
+        need = own + label_len(f) + 8
+        if f.kind == "secondary":
+            f.lane = lanes[r]
+            lanes[r] += 1
+        band[r] = max(band[r], need)
+    for r in range(max_rank + 1):
+        band[r] += lanes[r] * 4 + (4 if lanes[r] else 0)
+
+    def below(n) -> float:
+        """Height a node takes below its top line."""
+        if L.is_board(n):
+            outs = [devs(f) for f in L.slots[n]]
+            inc = max((dev_h([incomer(n, f.dst_port)]) for f in feeds
+                       if f.dst == n and incomer(n, f.dst_port)), default=0)
+            label_h = TAG + 3 + len(L.label_lines(n)) * LINE_GAP
+            return (max(inc + 4, label_h + 2)
+                    + max((dev_h(d) for d in outs), default=0) + 6
+                    + (8 if n in refs else 0))
+        h = blocks[L.block(n)].size[1]
+        if not L.slots[n]:
+            lines = [m.tag(n)] + L.label_lines(n)
+            return h + 3 + max(text_width(s, TAG if i == 0 else TXT)
+                               for i, s in enumerate(lines))
+        return h + (6 if len(L.slots[n]) > 1 else 0)
+
+    node_h = defaultdict(float)
+    for n in nodes:
+        node_h[rank[n]] = max(node_h[rank[n]], below(n))
+    supply_roots = [r for r in roots if m.kind(r) in ("transformer",
+                                                      "ring_main_unit")]
+    y_top, cursor = {}, -(22.0 if supply_roots else 0.0)
+    for r in range(max_rank + 1):
+        cursor -= band[r] if r else 0
+        y_top[r] = cursor
+        cursor -= node_h[r]
+
+    c = Canvas()
+    port_xy = {}          # node -> {'top': (x,y), 'top2': ..., 'bus': (x0,x1,y)}
+    enclosure_w = {}
+
+    # ---- nodes
+    for n in nodes:
+        x, yt = L.x[n], y_top[rank[n]]
+        info = {"rank": rank[n], "x": x, "y": yt}
+        if L.is_board(n):
+            xs = [L.slot_x[id(f)] for f in L.slots[n]] or [x]
+            half = L.own_width(n, blocks) / 2 - 4
+            x0 = min(min(xs) - 8, x - half)
+            x1 = max(max(xs) + 8, x + half)
+            incs = [incomer(n, f.dst_port) for f in feeds
+                    if f.dst == n and f.kind != "tie"]
+            inc_h = max((dev_h([d]) for d in incs if d), default=0)
+            label_h = TAG + 3 + len(L.label_lines(n)) * LINE_GAP
+            yb = yt - max(inc_h + 4, label_h + 2)
+            out_h = max((dev_h(devs(f)) for f in L.slots[n]), default=0)
+            c.polyline([(x0, yb), (x1, yb)], "E-BUSBAR", width=1.0)
+            c.rect((x0 - 4, yb - out_h - 4), (x1 + 4, yt), "E-ENCL")
+            a = m.attrs(n)
+            c.text((x0 - 2, yt - 2), m.tag(n), TAG, "E-TAG",
+                   align="TOP_LEFT")
+            for i, s in enumerate(L.label_lines(n)):
+                c.text((x0 - 2, yt - 2 - TAG - 1.5 - i * LINE_GAP), s, TXT,
+                       "E-TEXT", align="TOP_LEFT")
+            if n in refs:
+                c.text(((x0 + x1) / 2, yb - out_h - 7), refs[n], TXT,
+                       "E-TEXT", align="TOP_CENTER")
+            port_xy[n] = {"top": (x, yt), "bus": (x0, x1, yb),
+                          "inc_h": inc_h}
+            enclosure_w[n] = (x0 - 4, x1 + 4)
+            info.update(kind="board", busbar=[x0, x1, yb])
+        else:
+            b = blocks[L.block(n)]
+            h = b.size[1]
+            cy = yt - h / 2
+            a = m.attrs(n)
+            names = {d.tag for d in b.attdefs}
+            att = {}
+            if "TAG" in names:
+                att["TAG"] = m.tag(n)
+            if "RATING" in names:
+                att["RATING"] = rating(a)
+            if "VOLTS" in names:
+                att["VOLTS"] = volts(a)
+            if "VECTOR" in names:
+                att["VECTOR"] = a.get("vector_group", "")
+            if "LABEL" in names:
+                att["LABEL"] = m.kind(n).replace("_", " ").upper()[:12]
+            c.insert(L.block(n), (x, cy), "E-EQUIP", attribs=att)
+            ports = {k: (x + px, cy + py) for k, (px, py) in b.ports.items()}
+            ports.setdefault("top", (x, cy + h / 2))
+            ports.setdefault("bottom", (x, cy - h / 2))
+            if "top2" not in ports:
+                ports["top2"] = (ports["top"][0] + 4, ports["top"][1])
+            if not L.slots[n]:
+                lines = [] if "TAG" in names else [m.tag(n)]
+                lines += [] if "RATING" in names else L.label_lines(n)
+                if lines and "TAG" not in names:
+                    _rotated_lines(c, x - (len(lines) * TXT * 1.35) / 2 - 0.5,
+                                   cy - h / 2 - 2, lines, "E-TEXT",
+                                   downward=True)
+            elif "TAG" not in names:
+                tx = x + b.size[0] / 2 + 3
+                c.text((tx, cy + 2), m.tag(n), TAG, "E-TAG",
+                       align="BOTTOM_LEFT")
+                for i, s in enumerate(L.label_lines(n)):
+                    c.text((tx, cy - i * LINE_GAP), s, TXT, "E-TEXT",
+                           align="TOP_LEFT")
+            if len(L.slots[n]) > 1:
+                xs = [L.slot_x[id(f)] for f in L.slots[n]]
+                yb = ports["bottom"][1] - 5
+                c.line(ports["bottom"], (x, yb), "E-LV")
+                c.line((min(xs), yb), (max(xs), yb), "E-LV", width=0.35)
+                ports["branch"] = yb
+            port_xy[n] = ports
+            info.update(kind=m.kind(n), block=L.block(n))
+        plan.nodes[n] = info
+
+    # supply arrows above transformers and RMUs that nothing feeds
+    for r in supply_roots:
+        x, y = port_xy[r]["top"]
+        c.insert("E-SUPPLY", (x, y + 7), "E-HV")
+        pv = m.attrs(r).get("primary_voltage_v")
+        label = "INCOMING SUPPLY" + (f" {pv / 1000:g} kV" if pv else "")
+        c.text((x + 3, y + 12), label, TXT, "E-TEXT", align="MIDDLE_LEFT")
+
+    # ---- feeds
+    sec_count = defaultdict(int)
+    for f in feeds:
+        if f.kind == "tie":
+            continue
+        layer = "E-HV" if _is_hv(m, f) else "E-LV"
+        sx = L.slot_x[id(f)]
+        if L.is_board(f.src):
+            y = port_xy[f.src]["bus"][2]
+        elif "branch" in port_xy[f.src]:
+            y = port_xy[f.src]["branch"]
+        else:
+            y = port_xy[f.src]["bottom"][1]
+        for block, tag, rate in devs(f):
+            h = blocks[block].size[1]
+            top = y - 3
+            c.line((sx, y), (sx, top), layer)
+            c.insert(block, (sx, top - h / 2), "E-DEVICE",
+                     attribs=_dev_attribs(block, tag, rate, blocks))
+            y = top - h
+        # where it lands
+        dst = f.dst
+        if L.is_board(dst):
+            inc = incomer(dst, f.dst_port)
+            ex, ey = port_xy[dst]["top"]
+            if f.kind == "secondary":
+                k = sec_count[dst]
+                sec_count[dst] += 1
+                # other supplies land towards the right-hand end, clear of
+                # the board's name at the left
+                x0, x1, _ = port_xy[dst]["bus"]
+                ex = min(ex + 26 * (k + 1), x1 - 20)
+        else:
+            key = "top2" if f.kind == "secondary" else "top"
+            ex, ey = port_xy[dst][key]
+            inc = None
+        spec = cable_spec(f.cables[-1])
+        if f.kind == "primary" and abs(ex - sx) < 0.01:
+            c.line((sx, y), (sx, ey), layer)
+            _rotated_lines(c, sx + 1.4, ey + 3, spec, "E-CABLE-TEXT")
+        else:
+            lane_y = ey + 6 + 4 * f.lane
+            c.polyline([(sx, y), (sx, lane_y), (ex, lane_y), (ex, ey)], layer)
+            _rotated_lines(c, sx + 1.4, lane_y + 3, spec, "E-CABLE-TEXT")
+        if L.is_board(dst):
+            yb = port_xy[dst]["bus"][2]
+            yy = ey
+            if inc:
+                block, tag, rate = inc
+                h = blocks[block].size[1]
+                c.line((ex, yy), (ex, yy - 3), layer)
+                c.insert(block, (ex, yy - 3 - h / 2), "E-DEVICE",
+                         attribs=_dev_attribs(block, tag, rate, blocks))
+                yy = yy - 3 - h
+            c.line((ex, yy), (ex, yb), layer)
+
+    # ---- ties: between busbars side by side, else routed like a feed
+    for f in feeds:
+        if f.kind != "tie":
+            continue
+        a, b = f.src, f.dst
+        (ax0, ax1, ay), (bx0, bx1, by) = port_xy[a]["bus"], port_xy[b]["bus"]
+        if abs(ay - by) > 0.01:
+            plan.warnings.append(f"bus tie {f.cables[0]['id']} joins boards at "
+                                 "different levels; drawn as a link")
+        if ax1 < bx0:
+            p, q = (ax1, ay), (bx0, by)
+        else:
+            p, q = (ax0, ay), (bx1, by)
+        ds = [_device_for_port(m, f.src_port)] + \
+             [_inline_device(m, d) for d in f.devices]
+        ds = [d for d in ds if d]
+        y = max(ay, by) + 0.0
+        mid = (p[0] + q[0]) / 2
+        if abs(ay - by) < 0.01 and ds:
+            total = sum(blocks[d[0]].size[1] + 2 for d in ds)
+            x = mid - total / 2
+            c.line(p, (x, y), "E-LV", width=1.0)
+            for block, tag, rate in ds:
+                h = blocks[block].size[1]
+                c.insert(block, (x + h / 2 + 1, y), "E-DEVICE", rotation=90,
+                         attribs=_dev_attribs(block, tag, rate, blocks))
+                x += h + 2
+            c.line((x, y), q, "E-LV", width=1.0)
+        else:
+            top = max(ay, by) + 10
+            c.polyline([p, (p[0], top), (q[0], top), q], "E-LV")
+        c.text((mid, y - 9), "BUS TIE " + f.cables[0]["id"], TXT, "E-TEXT",
+               align="TOP_CENTER")
+
+    return c, plan
+
+
+
+SOURCE_KINDS = ("transformer", "generator", "utility_supply", "ring_main_unit")
+
+
+def _offsheet(kind, prefix, node, port, sheet):
+    tag = f"{prefix} {node} {port}"
+    return {"id": f"{prefix}-{node}-{port}", "kind": kind,
+            "domain": "electrical", "container": "SITE", "name": tag,
+            "attributes": {"tag": tag, "note": f"SHEET {sheet}"}}
+
+
+def split(m: Model, blocks, first_sheet: int = 1, min_feeders: int = 3,
+          size: Optional[str] = None, min_scale: float = 0.6):
+    """The SLD over several sheets. Returns [(subtitle, canvas, plan)].
+
+    A final board, one whose outgoing circuits all end at loads and that
+    has at least min_feeders of them, always gets a sheet of its own; its
+    supplies arrive at off-sheet connectors naming the source and its sheet.
+    Everything above the final boards goes on one overall sheet, where each
+    final board's busbar carries a "see sheet" note. If that overall sheet
+    would print smaller than min_scale (on size, or on A0), it is split
+    again: each main board (one fed straight from a transformer or
+    generator) gets a sheet with its supplies, and feeders to boards drawn
+    on other sheets end at onward off-sheet connectors.
+    """
+    from .sheet import compose
+
+    feeds = collect(m)
+    L = _Layout(m, feeds)
+    out_of = defaultdict(list)
+    for f in feeds:
+        if f.kind != "tie":
+            out_of[f.src].append(f)
+    final = [b for b in L.nodes if L.is_board(b)
+             and len(out_of[b]) >= min_feeders
+             and all(not out_of[f.dst] for f in out_of[b])]
+    final.sort(key=lambda b: m.order.get(b, 1e9))
+
+    def scale(c):
+        _, meta = compose(c, blocks, {}, legend_items(c, blocks), [],
+                          size=size)
+        return meta["scale"]
+
+    def sub_model(extra):
+        return Model({**m.data, "assets": list(m.data.get("assets") or [])
+                      + extra})
+
+    def board_sheets(sheet_of):
+        out = []
+        for b in final:
+            extra, mine = [], []
+            for f in feeds:
+                if f.dst == b and f.kind != "tie":
+                    port = f.src_port.split(".")[-1]
+                    a = _offsheet("offsheet", "FROM", f.src, port,
+                                  sheet_of.get(f.src, first_sheet))
+                    extra.append(a)
+                    mine.append(Feed(a["id"], b, a["id"] + ".OUT",
+                                     f.dst_port, list(f.devices),
+                                     list(f.cables)))
+            mine += [_copy(f) for f in out_of[b]]
+            c, plan = layout(sub_model(extra), blocks, mine)
+            out.append((m.name(b).upper() if m.name(b) != b else b, c, plan))
+        return out
+
+    if not final:
+        c, plan = layout(m, blocks, feeds)
+        return [("", c, plan)]
+
+    # one overall sheet above the final boards
+    sheet_of = {b: first_sheet + 1 + k for k, b in enumerate(final)}
+    overall = [_copy(f) for f in feeds if f.src not in sheet_of]
+    refs = {b: f"OUTGOING CIRCUITS: SEE SHEET {n}"
+            for b, n in sheet_of.items()}
+    c, plan = layout(m, blocks, overall, refs)
+    mains = [b for b in L.nodes if L.is_board(b) and b not in sheet_of
+             and any(m.kind(f.src) in SOURCE_KINDS for f in feeds
+                     if f.dst == b)]
+    mains.sort(key=lambda b: m.order.get(b, 1e9))
+    if scale(c) >= min_scale or len(mains) < 2:
+        return [("OVERALL", c, plan)] + board_sheets(sheet_of)
+
+    # a sheet per main board
+    sheet_of = {b: first_sheet + k for k, b in enumerate(mains)}
+    sheet_of.update({b: first_sheet + len(mains) + k
+                     for k, b in enumerate(final)})
+    parts = []
+    for main in mains:
+        extra, mine, seen = [], [], set()
+
+        def take_up(n):
+            for f in feeds:
+                if f.dst == n and f.kind != "tie" and id(f) not in seen \
+                        and f.src not in sheet_of:
+                    seen.add(id(f))
+                    mine.append(_copy(f))
+                    take_up(f.src)
+
+        def take_down(n):
+            for f in out_of[n]:
+                if id(f) in seen:
+                    continue
+                seen.add(id(f))
+                if f.dst in sheet_of:
+                    port = f.dst_port.split(".")[-1]
+                    a = _offsheet("offsheet_to", "TO", f.dst, port,
+                                  sheet_of[f.dst])
+                    extra.append(a)
+                    mine.append(Feed(f.src, a["id"], f.src_port,
+                                     a["id"] + ".IN", list(f.devices),
+                                     list(f.cables)))
+                else:
+                    mine.append(_copy(f))
+                    take_down(f.dst)
+
+        take_up(main)
+        take_down(main)
+        c, plan = layout(sub_model(extra), blocks, mine)
+        parts.append((m.name(main).upper() if m.name(main) != main
+                      else main, c, plan))
+    return parts + board_sheets(sheet_of)
+
+
+def _copy(f: Feed) -> Feed:
+    return Feed(f.src, f.dst, f.src_port, f.dst_port, list(f.devices),
+                list(f.cables))
+
+def legend_items(canvas: Canvas, blocks):
+    used = []
+    for p in canvas.prims:
+        if p.kind == "insert" and p.data["block"] not in used:
+            used.append(p.data["block"])
+    order = list(blocks)
+    items = [(blocks[b].description, b, {"layer": "E-DEVICE"})
+             for b in sorted(used, key=order.index)]
+    layers = {p.layer for p in canvas.prims}
+    if "E-BUSBAR" in layers:
+        items.append(("Busbar", None, {"layer": "E-BUSBAR", "width": 1.0}))
+    if "E-LV" in layers:
+        items.append(("LV cable", None, {"layer": "E-LV"}))
+    if "E-HV" in layers:
+        items.append(("HV cable", None, {"layer": "E-HV"}))
+    if "E-ENCL" in layers:
+        items.append(("Switchboard enclosure", None,
+                      {"layer": "E-ENCL", "linetype": "DASHED"}))
+    return items
+
+
+# ---------------------------------------------------------------- placed
+
+PLACED_SLD_MM = 0.38        # sheet mm per schematic unit (RD110 one-line)
+PLACED_TEXT = 1.15
+
+
+def placed(m: Model) -> bool:
+    """True when every asset on a cable has a schematic placement."""
+    ends = {m.asset_of(c.get(k, "")) for c in m.connections
+            if c.get("type") == "cable" for k in ("from", "to")}
+    ends.discard(None)
+    return bool(ends) and all(m.schematic(a) for a in ends)
+
+
+def placed_parts(m: Model, blocks, gap=300.0):
+    """The placed diagram split where the drawing has separate sheets side
+    by side: clusters of assets more than `gap` units apart in x."""
+    ids = sorted((a for a in m.assets if m.schematic(a)),
+                 key=lambda a: m.schematic(a)["at"][0])
+    groups, cur, last = [], [], None
+    for a in ids:
+        x = m.schematic(a)["at"][0]
+        if last is not None and x - last > gap:
+            groups.append(cur)
+            cur = []
+        cur.append(a)
+        last = x
+    if cur:
+        groups.append(cur)
+    out = []
+    for g in groups:
+        c, plan = layout_placed(m, blocks, set(g))
+        # name the part after its boards
+        boards = sorted(m.name(a) for a in g if m.kind(a) == "switchboard")
+        title = "IT ROOM" if any("IT " in b.upper() for b in boards) else \
+            "MECHANICAL" if boards else ""
+        out.append((title, c, plan))
+    return out
+
+
+def layout_placed(m: Model, blocks, only=None):
+    """Draw every asset where its schematic placement says."""
+    plan = Plan()
+    ids = [a for a in m.assets if m.schematic(a) and (only is None or a in only)]
+    if not ids:
+        return Canvas(), plan
+    k = PLACED_SLD_MM
+    x0 = min(m.schematic(a)["at"][0] for a in ids)
+    y0 = min(m.schematic(a)["at"][1] for a in ids)
+
+    def P(p):
+        return ((p[0] - x0) * k, (p[1] - y0) * k)
+
+    cables = [conn for conn in m.connections if conn.get("type") == "cable"]
+    feeds_in = {}
+    for conn in cables:
+        feeds_in.setdefault(m.asset_of(conn["to"]), []).append(conn)
+
+    # a load fed from a stack of busways (a rack group) is drawn as a box
+    # under the stack, the width of it, with a tap-off drop from each
+    group_box = {}
+    for a in ids:
+        ways = [m.asset_of(f["from"]) for f in feeds_in.get(a, [])]
+        buses = [m.attrs(w).get("bus") for w in ways if m.kind(w) in SLD_BOARDS]
+        if len(buses) > 1 and all(buses):
+            lo = min(min(b[0][0], b[1][0]) for b in buses)
+            hi = max(max(b[0][0], b[1][0]) for b in buses)
+            yb = min(b[0][1] for b in buses)
+            (bx0, by0), (bx1, by1) = P((lo, yb - 18)), P((hi, yb - 8))
+            group_box[a] = (bx0, by0, bx1, by1)
+
+    # each asset's outline on the sheet, for cables to end on
+    outline = {}
+    for a in ids:
+        if a in group_box:
+            bx0, by0, bx1, by1 = group_box[a]
+            outline[a] = ("rect", (bx0, by0), (bx1, by1))
+            continue
+        sch = m.schematic(a)
+        x, y = P(sch["at"])
+        w, h = (v * k for v in sch.get("size", (10, 10)))
+        if m.kind(a) in ("chiller", "cdu", "crah", "generator", "transformer"):
+            outline[a] = ("circle", (x, y), min(w, h) / 2)
+        elif w > 1 and h > 1 and max(w, h) > 6 and m.kind(a) not in SLD_BOARDS:
+            outline[a] = ("rect", (x - w / 2, y - h / 2), (x + w / 2, y + h / 2))
+
+    def to_outline(pts, a):
+        """Carry a cable that stops short of its equipment on to its edge,
+        along its last run."""
+        o = outline.get(a)
+        if not o or len(pts) < 2:
+            return pts
+        (px, py), (qx, qy) = pts[-2], pts[-1]
+        if o[0] == "rect":
+            (lx, ly), (hx, hy) = o[1], o[2]
+            if abs(px - qx) < 1e-6 and lx <= qx <= hx:          # vertical run
+                edge = hy if qy > hy else ly if qy < ly else None
+                if edge is not None and abs(edge - qy) < 12:
+                    return pts + [(qx, edge)]
+            if abs(py - qy) < 1e-6 and ly <= qy <= hy:          # horizontal
+                edge = hx if qx > hx else lx if qx < lx else None
+                if edge is not None and abs(edge - qx) < 12:
+                    return pts + [(edge, qy)]
+        return pts
+
+    c = Canvas()
+    for a in ids:
+        sch = m.schematic(a)
+        x, y = P(sch["at"])
+        w, h = sch.get("size", (10, 10))
+        w, h = w * k, h * k
+        kind = m.kind(a)
+        at = m.attrs(a)
+        plan.nodes[a] = {"x": x, "y": y, "kind": kind}
+        if kind in SLD_BOARDS:
+            bus = at.get("bus")
+            (bx0, by), (bx1, _) = (P(bus[0]), P(bus[1])) if bus else \
+                ((x - w / 2, y), (x + w / 2, y))
+            c.polyline([(bx0, by), (bx1, by)], "E-BUSBAR",
+                       width=0.6 if kind == "switchboard" else 0.45)
+            if kind == "switchboard":
+                c.text((bx1, by + 1.2), m.name(a).upper(), 1.8, "E-TAG",
+                       align="BOTTOM_RIGHT")
+                r = ", ".join(x for x in (
+                    f"{at['current_a']}A" if at.get("current_a") else "",
+                    f"{at['voltage_v']}V" if at.get("voltage_v") else "",
+                    at.get("earthing", ""),
+                    f"{at['fault_ka']}kA" if at.get("fault_ka") else "") if x)
+                c.text((bx1, by + 3.4), r, PLACED_TEXT, "E-TEXT",
+                       align="BOTTOM_RIGHT")
+            else:
+                rating = f"  {at['current_a']}A" if at.get("current_a") else ""
+                c.text((bx1 + 1.0, by), m.tag(a) + rating, PLACED_TEXT * 0.9,
+                       "E-TEXT", align="MIDDLE_LEFT")
+            continue
+        if kind in ("breaker", "acb_breaker", "mccb_breaker", "mcb_breaker"):
+            block = "E-ACB" if kind == "acb_breaker" else "E-CB"
+            bh = blocks[block].size[1]
+            c.insert(block, (x, y), "E-DEVICE", scale=h / bh)
+            lines = [at.get("designation", m.tag(a))]
+            if at.get("frame_a"):
+                lines.append(f"{at['frame_a']}AF")
+            if at.get("trip_a"):
+                lines.append(f"{at['trip_a']}AT")
+            for i, s in enumerate(lines):
+                c.text((x + 1.0, y + h / 2 - i * PLACED_TEXT * 1.3), s,
+                       PLACED_TEXT if i else PLACED_TEXT * 1.05,
+                       "E-TAG" if i == 0 else "E-TEXT", align="TOP_LEFT")
+            continue
+        if kind == "ups" and w > 20 and h > 20:
+            # the UPS enclosure as drawn, with the symbol in it: its input,
+            # bypass and output cables end on the enclosure
+            c.rect((x - w / 2, y - h / 2), (x + w / 2, y + h / 2), "E-EQUIP")
+            bw, bh = blocks["E-UPS"].size
+            sc = min(w / bw, h / bh) * 0.45
+            c.insert("E-UPS", (x, y), "E-EQUIP", scale=sc)
+            c.text((x + w / 2 - 1.0, y + h / 2 - 1.0), m.tag(a), 1.5, "E-TAG",
+                   align="TOP_RIGHT")
+            c.text((x + w / 2 - 1.0, y + h / 2 - 3.2),
+                   f"{at.get('model', '')} {at.get('power_kw', 0):g} kW".strip(),
+                   PLACED_TEXT, "E-TEXT", align="TOP_RIGHT")
+            continue
+        block = {"transformer": "E-TX", "generator": "E-GEN", "ups": "E-UPS",
+                 "utility_supply": "E-SUPPLY"}.get(kind)
+        if block:
+            bw, bh = blocks[block].size
+            sc = min(w / bw, h / bh)
+            c.insert(block, (x, y), "E-EQUIP", scale=sc)
+            notes = [m.tag(a)]
+            if kind == "transformer":
+                notes += [f"{at.get('power_kva', '')} kVA",
+                          f"{at.get('primary_voltage_v', 0) / 1000:g} kV / "
+                          f"{at.get('secondary_voltage_v', '')} V",
+                          f"{at.get('vector_group', '')} "
+                          f"{at.get('impedance_pct', '')}% Z"]
+            elif kind == "generator":
+                notes += [f"{at.get('power_kw', '')} kW / "
+                          f"{at.get('power_kva', '')} kVA"]
+            elif kind == "ups":
+                notes += [f"{at.get('model', '')} {at.get('power_kw', '')} kW"]
+            if kind != "utility_supply":
+                for i, s in enumerate(notes):
+                    c.text((x + w / 2 + 1.5, y + h / 2 - i * 1.8), s,
+                           1.5 if i == 0 else PLACED_TEXT,
+                           "E-TAG" if i == 0 else "E-TEXT", align="TOP_LEFT")
+            continue
+        if a in group_box:
+            bx0, by0, bx1, by1 = group_box[a]
+            c.rect((bx0, by0), (bx1, by1), "E-EQUIP")
+            name = m.name(a).split(":")[0].upper()
+            c.text(((bx0 + bx1) / 2, (by0 + by1) / 2 + 0.9), name, 1.4,
+                   "E-TAG", align="MIDDLE_CENTER")
+            detail = m.name(a).split(":", 1)[1].strip() if ":" in m.name(a) else ""
+            if at.get("power_kw"):
+                detail += f" = {at['power_kw']:g} kW"
+            c.text(((bx0 + bx1) / 2, (by0 + by1) / 2 - 1.0), detail,
+                   PLACED_TEXT * 0.85, "E-TEXT", align="MIDDLE_CENTER")
+            continue
+        # loads: an outline, labelled
+        if w > 1 and h > 1 and a in outline:
+            if outline[a][0] == "circle":
+                c.circle((x, y), min(w, h) / 2, "E-EQUIP")
+            else:
+                c.rect((x - w / 2, y - h / 2), (x + w / 2, y + h / 2), "E-EQUIP")
+            label = m.tag(a) if kind != "load" else m.name(a).upper()
+            size = min(1.4, max(0.7, w / max(len(label), 1) * 1.4))
+            c.text((x, y), label, size, "E-TAG", align="MIDDLE_CENTER")
+        else:
+            # a single load: an arrow, its name reading down the sheet
+            c.insert("E-LOAD", (x, y), "E-EQUIP", scale=0.5)
+            c.text((x, y - 2.0), m.name(a).upper()[:40], PLACED_TEXT,
+                   "E-TEXT", align="MIDDLE_LEFT", rotation=270)
+
+    # each board in a dashed enclosure around its busbar and devices
+    for a in ids:
+        if m.kind(a) != "switchboard" or not m.attrs(a).get("bus"):
+            continue
+        bus = m.attrs(a)["bus"]
+        (bx0, by), (bx1, _) = P(bus[0]), P(bus[1])
+        low, high = by - 1.0, by + 5.5
+        for d in ids:
+            if m.assets[d].get("container") == a:
+                sch = m.schematic(d)
+                dx, dy = P(sch["at"])
+                dh = sch.get("size", (0, 10))[1] * k
+                bx0, bx1 = min(bx0, dx - 1.0), max(bx1, dx + 6.0)
+                low = min(low, dy - dh / 2 - 1.0, dy + dh / 2 - 4.6)
+                high = max(high, dy + dh / 2 + 1.0)
+        c.rect((bx0 - 2.0, low - 1.0), (bx1 + 2.0, high + 1.0), "E-ENCL")
+    # interlocked incomers (an ATS pair): a dashed link between them
+    for a in ids:
+        other = m.attrs(a).get("interlocked_with")
+        if not other or other not in ids or other < a:
+            continue
+        (ax, ay), (ox, oy) = P(m.schematic(a)["at"]), P(m.schematic(other)["at"])
+        mx, my = (ax + ox) / 2, (ay + oy) / 2
+        c.line((ax + 0.8, ay), (mx - 2.5, my), "E-ENCL")
+        c.line((mx + 2.5, my), (ox - 0.8, oy), "E-ENCL")
+        c.rect((mx - 2.5, my - 1.0), (mx + 2.5, my + 1.0), "E-DEVICE")
+        c.text((mx, my), "ATS", PLACED_TEXT * 0.9, "E-TEXT",
+               align="MIDDLE_CENTER")
+
+    def crowded(b, room=60.0):
+        """Another outline beside this one, too close for side labels."""
+        o = outline[b]
+        (bx, by) = o[1] if o[0] == "circle" else \
+            ((o[1][0] + o[2][0]) / 2, (o[1][1] + o[2][1]) / 2)
+        for other, q in outline.items():
+            if other == b:
+                continue
+            (qx, qy) = q[1] if q[0] == "circle" else \
+                ((q[1][0] + q[2][0]) / 2, (q[1][1] + q[2][1]) / 2)
+            if abs(qy - by) < 6 and 0 < abs(qx - bx) < room:
+                return True
+        return False
+
+    side = {}
+    for conn in cables:
+        a, b = m.asset_of(conn["from"]), m.asset_of(conn["to"])
+        here_a = only is None or a in only
+        here_b = only is None or b in only
+        if not (here_a or here_b):
+            continue
+        path = m.path(conn)
+        if not path or len(path) < 2:
+            continue
+        hv = (conn.get("attributes") or {}).get("voltage_class") == "HV"
+        if here_a and here_b and b in group_box:
+            # tap-off drop from the busway into the rack group box
+            bx0, by0, bx1, by1 = group_box[b]
+            bus = m.attrs(a).get("bus")
+            n = len(feeds_in[b])
+            i = [m.asset_of(f["from"]) for f in feeds_in[b]].index(a)
+            xi = bx0 + (bx1 - bx0) * (0.3 + 0.4 * i / max(n - 1, 1))
+            c.line((xi, P(bus[0])[1]), (xi, by1), "E-LV")
+            c.circle((xi, P(bus[0])[1]), 0.35, "E-LV")
+        elif here_a and here_b:
+            c.polyline(to_outline([P(p) for p in path], b),
+                       "E-HV" if hv else "E-LV")
+        elif here_a:
+            # a feed to another sheet: drawn to where the drawing stops it,
+            # with an arrow and where it goes
+            pts = [P(p) for p in path]
+            c.polyline(pts, "E-LV")
+            c.insert("E-LOAD", pts[-1], "E-EQUIP", scale=0.35)
+            c.text((pts[-1][0] + 0.6, pts[-1][1] - 2.2), f"TO {m.tag(b)}",
+                   PLACED_TEXT * 0.9, "E-TEXT", align="TOP_LEFT", rotation=90)
+        else:
+            # fed from another sheet: an incoming stub on the equipment,
+            # first feed from the left, the next from the right
+            o = outline.get(b)
+            if not o:
+                continue
+            n = side.get(b, 0)
+            side[b] = n + 1
+            if o[0] == "circle":
+                (cx, cy), r = o[1], o[2]
+                lx, hx = cx - r, cx + r
+            else:
+                (lx, cy0), (hx, cy1) = o[1], o[2]
+                cx, cy = (lx + hx) / 2, (cy0 + cy1) / 2
+            sgn = -1 if n % 2 == 0 else 1
+            board = m.assets[a].get("container")
+            src = f"FROM {m.name(board).upper()}" if board in m.assets else "FROM"
+            cb = f"CB {m.attrs(a).get('designation', m.tag(a))}"
+            if crowded(b):
+                # neighbours either side: come in from below, the text
+                # reading down the sheet
+                r = (hx - lx) / 2
+                sx = cx + sgn * r * 0.45
+                sy = cy - (r * 0.9 if o[0] == "circle" else (cy - o[1][1]))
+                c.line((sx, sy), (sx, sy - 5.0), "E-LV")
+                c.text((sx, sy - 5.6), f"{src} {cb}", PLACED_TEXT * 0.8,
+                       "E-TEXT", align="MIDDLE_LEFT", rotation=270)
+                continue
+            edge = lx if sgn < 0 else hx
+            end = edge + sgn * 6.0
+            c.line((end, cy), (edge, cy), "E-LV")
+            c.text((end + sgn * 0.6, cy + 0.6), src,
+                   PLACED_TEXT * 0.85, "E-TEXT",
+                   align="BOTTOM_RIGHT" if sgn < 0 else "BOTTOM_LEFT")
+            c.text((end + sgn * 0.6, cy - 0.6), cb,
+                   PLACED_TEXT * 0.85, "E-TEXT",
+                   align="TOP_RIGHT" if sgn < 0 else "TOP_LEFT")
+    return c, plan

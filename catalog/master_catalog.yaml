@@ -1,8 +1,8 @@
 meta:
-  format: IndustrialML-Catalog
+  format: IndustroML-Catalog
   version: "0.1"
   notes: |
-    Master catalogue of base element and connector types for IndustrialML.
+    Master catalogue of base element and connector types for IndustroML.
     Each element defines domain, kind, a human label, a suggested icon key,
     default attributes, and typical interfaces. Projects derive a subset into
     a project catalogue for authoring.
@@ -67,8 +67,10 @@ mediums:
     - ao_4_20mA
 
 connectors:
-  # Standardized connector types and their typical attribute fields and color schema
+  # Standardized connector types and their typical attribute fields and color schema.
+  # connection_type is the schema's connectionType each one is written as.
   - type: low_voltage
+    connection_type: cable
     label: Low-Voltage Electrical
     color: "#111827"   # black
     attributes:
@@ -78,6 +80,7 @@ connectors:
       - length_m
       - method
   - type: high_voltage
+    connection_type: cable
     label: High-Voltage Electrical
     color: "#dc2626"   # red
     attributes:
@@ -87,6 +90,7 @@ connectors:
       - length_m
       - method
   - type: data
+    connection_type: data_link
     label: Data / Communications
     color: "#059669"   # green
     attributes:
@@ -96,6 +100,7 @@ connectors:
       - speed_mbps
       - vlan
   - type: fluid
+    connection_type: pipe
     label: Mechanical / Fluid
     color: "#2563eb"   # blue
     attributes:
@@ -105,6 +110,15 @@ connectors:
       - length_m
       - service
       - pressure_bar
+  - type: signal
+    connection_type: io_link
+    label: Control / I/O Signal
+    color: "#7c3aed"   # violet
+    attributes:
+      - signal
+      - range
+      - cores
+      - length_m
 
 elements:
   # ELECTRICAL
@@ -769,3 +783,65 @@ elements:
     kind: interlock_switch
     label: Interlock Switch
     icon: safe:relay
+
+  # DATA CENTRE PLANT (used by drawings/)
+  - domain: electrical
+    kind: ring_main_unit
+    label: Ring main unit
+    icon: sld:switchboard
+  - domain: electrical
+    kind: static_transfer_switch
+    label: Static transfer switch
+    icon: sld:switchboard
+  - domain: electrical
+    kind: pdu
+    label: Power distribution unit
+    icon: sld:switchboard
+  - domain: electrical
+    kind: utility_supply
+    label: Utility supply point
+    icon: sld:switchboard
+  - domain: mechanical
+    kind: chiller
+    label: Chiller
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: dry_cooler
+    label: Dry cooler
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: cooling_tower
+    label: Cooling tower
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: cdu
+    label: Coolant distribution unit
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: expansion_tank
+    label: Expansion vessel
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: air_separator
+    label: Air and dirt separator
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: header
+    label: Pipe header
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: crah
+    label: Air handler or fan wall with a chilled-water coil
+    icon: pid:heat_exchanger
+  - domain: mechanical
+    kind: tee
+    label: Pipe tee or junction
+    icon: pid:valve
+  - domain: mechanical
+    kind: flexible_connection
+    label: Flexible connection or bellows
+    icon: pid:valve
+  - domain: electrical
+    kind: load
+    label: Electrical load, or a group of loads drawn as one
+    icon: sld:motor

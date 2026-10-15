@@ -19,6 +19,15 @@
           "additionalProperties": { "type": "string" }
         },
         "site_name": { "type": "string" },
+        "schematic": {
+          "type": "object",
+          "description": "What schematic coordinates are measured in, and where they came from.",
+          "additionalProperties": false,
+          "properties": {
+            "units": { "type": "string" },
+            "source": { "type": "string" }
+          }
+        },
         "tags": {
           "type": "array",
           "items": { "type": "string" },
@@ -83,7 +92,10 @@
         "level_transmitter","proximity_sensor","limit_switch","actuator","positioner","solenoid_valve",
         "control_valve_actuator",
         "estop","safety_relay","light_curtain","gas_detector","fire_alarm_panel","smoke_detector",
-        "heat_detector","horn_strobe","manual_call_point","safety_plc","interlock_switch"
+        "heat_detector","horn_strobe","manual_call_point","safety_plc","interlock_switch",
+        "ring_main_unit","static_transfer_switch","pdu","utility_supply",
+        "chiller","dry_cooler","cooling_tower","cdu","crah","expansion_tank","air_separator","header",
+        "tee","flexible_connection","load"
       ]
     },
     "medium": {
@@ -118,6 +130,44 @@
         }
       }
     },
+    "point": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[x, y] on the schematic, in meta.schematic.units"
+    },
+    "schematicPlacement": {
+      "type": "object",
+      "description": "Where an asset sits on a schematic (P&ID, SLD). A drawing generator draws it there instead of laying it out, so a model read from a drawing keeps that drawing's arrangement.",
+      "required": ["at"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "$ref": "#/$defs/point", "description": "centre of the symbol" },
+        "size": {
+          "type": "array",
+          "items": { "type": "number", "exclusiveMinimum": 0 },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[width, height] of the equipment outline"
+        },
+        "rotation": { "enum": [0, 90, 180, 270], "description": "degrees anticlockwise; 90 for an inline item on a vertical pipe" },
+        "sheet": { "type": "string", "description": "the sheet it is drawn on, when there are several" }
+      }
+    },
+    "schematicPath": {
+      "type": "object",
+      "description": "The route a connection takes on a schematic, end to end.",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "array", "items": { "$ref": "#/$defs/point" }, "minItems": 2 }
+      }
+    },
+    "interfaceRole": {
+      "enum": ["in", "out", "supply", "return", "suction", "discharge", "tap", "vent", "drain", "a", "b"],
+      "description": "What a port does, so tools need not guess from its name. in/out follow flow; supply/return are a load's side of a loop; suction/discharge a pump's; tap an instrument connection; a/b the ends of a symmetric inline item."
+    },
     "extendedAttributes": {
       "type": "object",
       "description": "Attributes object that includes common reference attributes plus custom fields",
@@ -149,7 +199,8 @@
         "kind": { "$ref": "#/$defs/assetKind" },
         "container": { "$ref": "#/$defs/id" },
         "attributes": { "$ref": "#/$defs/extendedAttributes" },
-        "labels": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+        "labels": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "schematic": { "$ref": "#/$defs/schematicPlacement" }
       }
     },
     "interface": {
@@ -162,6 +213,7 @@
         "name": { "type": "string" },
         "domain": { "$ref": "#/$defs/domain" },
         "medium": { "$ref": "#/$defs/medium" },
+        "role": { "$ref": "#/$defs/interfaceRole" },
         "attributes": { "$ref": "#/$defs/extendedAttributes" }
       }
     },
@@ -179,7 +231,8 @@
           "type": "array",
           "items": { "$ref": "#/$defs/id" },
           "description": "Optional waypoints: trays, conduits, racks"
-        }
+        },
+        "schematic": { "$ref": "#/$defs/schematicPath" }
       }
     }
   }

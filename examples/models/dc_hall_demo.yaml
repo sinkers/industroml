@@ -1,0 +1,1978 @@
+# Invented data hall for the drawing generator. Regenerate with
+# python3 examples/tools/make_dc_demo.py
+meta:
+  format: IndustroML
+  version: '0.1'
+  site_name: Example Data Centre, Hall 1
+  units:
+    length: m
+    diameter: mm
+    voltage: V
+    current: A
+    power: kW
+  drawing:
+    client: Example Data Centres
+    project: DC1 Hall 1
+    number: EX-DC1-0001
+    drawn: IndustroML
+    checked: ''
+    approved: ''
+    status: Preliminary - not for construction
+  revisions:
+  - rev: A
+    date: '2026-10-13'
+    description: Generated for review
+    by: IML
+    chk: ''
+containers:
+- id: SITE
+  name: Example Data Centre
+  type: site
+- id: HV-YARD
+  name: HV Yard
+  type: area
+  parent: SITE
+- id: GEN-YARD
+  name: Generator Yard
+  type: area
+  parent: SITE
+- id: SWR-A
+  name: Switchroom A
+  type: room
+  parent: SITE
+- id: SWR-B
+  name: Switchroom B
+  type: room
+  parent: SITE
+- id: PLANT
+  name: Chiller Plant
+  type: room
+  parent: SITE
+- id: HALL-1
+  name: Data Hall 1
+  type: room
+  parent: SITE
+assets:
+- id: UTIL
+  name: Utility supply 11 kV
+  kind: utility_supply
+  domain: electrical
+  container: HV-YARD
+  attributes:
+    voltage_v: 11000
+    fault_ka: 16
+- id: RMU-1
+  name: Ring main unit
+  kind: ring_main_unit
+  domain: electrical
+  container: HV-YARD
+  attributes:
+    voltage_v: 11000
+    current_a: 630
+- id: TX-A
+  name: Transformer A 1500 kVA
+  kind: transformer
+  domain: electrical
+  container: HV-YARD
+  attributes:
+    power_kva: 1500
+    primary_voltage_v: 11000
+    secondary_voltage_v: 415
+    vector_group: Dyn11
+- id: GEN-A
+  name: Generator A 1250 kVA
+  kind: generator
+  domain: electrical
+  container: GEN-YARD
+  attributes:
+    power_kva: 1250
+    voltage_v: 415
+- id: ATS-A
+  name: Transfer switch A 2500 A
+  kind: automatic_transfer_switch
+  domain: electrical
+  container: SWR-A
+  attributes:
+    current_a: 2500
+- id: MSB-A
+  name: Main switchboard A
+  kind: switchboard
+  domain: electrical
+  container: SWR-A
+  attributes:
+    voltage_v: 415
+    current_a: 2500
+    fault_ka: 65
+- id: UPS-A
+  name: UPS A 500 kVA
+  kind: ups
+  domain: electrical
+  container: SWR-A
+  attributes:
+    power_kva: 500
+- id: CSB-A
+  name: Critical switchboard A
+  kind: switchboard
+  domain: electrical
+  container: SWR-A
+  attributes:
+    voltage_v: 415
+    current_a: 800
+- id: MSSB-A
+  name: Mechanical switchboard A
+  kind: switchboard
+  domain: electrical
+  container: PLANT
+  attributes:
+    voltage_v: 415
+    current_a: 1000
+- id: DB-A
+  name: House services board A
+  kind: distribution_board
+  domain: electrical
+  container: SWR-A
+  attributes:
+    voltage_v: 415
+    current_a: 160
+- id: PDU-A1
+  name: PDU A1 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: PDU-A2
+  name: PDU A2 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: PDU-A3
+  name: PDU A3 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: TX-B
+  name: Transformer B 1500 kVA
+  kind: transformer
+  domain: electrical
+  container: HV-YARD
+  attributes:
+    power_kva: 1500
+    primary_voltage_v: 11000
+    secondary_voltage_v: 415
+    vector_group: Dyn11
+- id: GEN-B
+  name: Generator B 1250 kVA
+  kind: generator
+  domain: electrical
+  container: GEN-YARD
+  attributes:
+    power_kva: 1250
+    voltage_v: 415
+- id: ATS-B
+  name: Transfer switch B 2500 A
+  kind: automatic_transfer_switch
+  domain: electrical
+  container: SWR-B
+  attributes:
+    current_a: 2500
+- id: MSB-B
+  name: Main switchboard B
+  kind: switchboard
+  domain: electrical
+  container: SWR-B
+  attributes:
+    voltage_v: 415
+    current_a: 2500
+    fault_ka: 65
+- id: UPS-B
+  name: UPS B 500 kVA
+  kind: ups
+  domain: electrical
+  container: SWR-B
+  attributes:
+    power_kva: 500
+- id: CSB-B
+  name: Critical switchboard B
+  kind: switchboard
+  domain: electrical
+  container: SWR-B
+  attributes:
+    voltage_v: 415
+    current_a: 800
+- id: MSSB-B
+  name: Mechanical switchboard B
+  kind: switchboard
+  domain: electrical
+  container: PLANT
+  attributes:
+    voltage_v: 415
+    current_a: 1000
+- id: DB-B
+  name: House services board B
+  kind: distribution_board
+  domain: electrical
+  container: SWR-B
+  attributes:
+    voltage_v: 415
+    current_a: 160
+- id: PDU-B1
+  name: PDU B1 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: PDU-B2
+  name: PDU B2 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: PDU-B3
+  name: PDU B3 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: STS-1
+  name: Static transfer switch 250 A
+  kind: static_transfer_switch
+  domain: electrical
+  container: HALL-1
+  attributes:
+    current_a: 250
+- id: PDU-S1
+  name: PDU S1 single corded 150 kVA
+  kind: pdu
+  domain: electrical
+  container: HALL-1
+  attributes:
+    power_kva: 150
+- id: CH-1
+  name: Chiller 1 1200 kW
+  kind: chiller
+  domain: mechanical
+  container: PLANT
+  attributes:
+    capacity_kw: 1200
+    power_kw: 260
+- id: PMP-1
+  name: CHW pump 1
+  kind: pump
+  domain: mechanical
+  container: PLANT
+  attributes:
+    flow_ls: 55
+    head_m: 28
+    power_kw: 30
+- id: CH-2
+  name: Chiller 2 1200 kW
+  kind: chiller
+  domain: mechanical
+  container: PLANT
+  attributes:
+    capacity_kw: 1200
+    power_kw: 260
+- id: PMP-2
+  name: CHW pump 2
+  kind: pump
+  domain: mechanical
+  container: PLANT
+  attributes:
+    flow_ls: 55
+    head_m: 28
+    power_kw: 30
+- id: HDR-S
+  name: CHW supply header
+  kind: header
+  domain: mechanical
+  container: PLANT
+  attributes: {}
+- id: HDR-R
+  name: CHW return header
+  kind: header
+  domain: mechanical
+  container: PLANT
+  attributes: {}
+- id: HDR-P
+  name: Pump suction header
+  kind: header
+  domain: mechanical
+  container: PLANT
+  attributes: {}
+- id: AS-1
+  name: Air and dirt separator
+  kind: air_separator
+  domain: mechanical
+  container: PLANT
+  attributes: {}
+- id: EXP-1
+  name: Expansion vessel 500 L
+  kind: expansion_tank
+  domain: mechanical
+  container: PLANT
+  attributes:
+    volume_m3: 0.5
+- id: TT-101
+  name: CHW supply temperature
+  kind: temperature_transmitter
+  domain: control
+  container: PLANT
+  attributes: {}
+- id: PT-102
+  name: Pump suction pressure
+  kind: pressure_transmitter
+  domain: control
+  container: PLANT
+  attributes: {}
+- id: BFV-101
+  name: Chiller 1 outlet isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: butterfly
+- id: BFV-102
+  name: Pump 1 suction isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: butterfly
+- id: STR-1
+  name: Pump 1 strainer
+  kind: strainer_y
+  domain: mechanical
+  container: PLANT
+  attributes: {}
+- id: NRV-1
+  name: Pump 1 check valve
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: check
+- id: BFV-103
+  name: Pump 1 discharge isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: butterfly
+- id: BFV-201
+  name: Chiller 2 outlet isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: butterfly
+- id: BFV-202
+  name: Pump 2 suction isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: butterfly
+- id: STR-2
+  name: Pump 2 strainer
+  kind: strainer_y
+  domain: mechanical
+  container: PLANT
+  attributes: {}
+- id: NRV-2
+  name: Pump 2 check valve
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: check
+- id: BFV-203
+  name: Pump 2 discharge isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: butterfly
+- id: CDU-1
+  name: CDU 1 600 kW
+  kind: cdu
+  domain: mechanical
+  container: HALL-1
+  attributes:
+    capacity_kw: 600
+- id: BV-11
+  name: CDU 1 supply isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: ball
+- id: FCV-1
+  name: CDU 1 flow control
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: control
+- id: BV-12
+  name: CDU 1 return isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: ball
+- id: CDU-2
+  name: CDU 2 600 kW
+  kind: cdu
+  domain: mechanical
+  container: HALL-1
+  attributes:
+    capacity_kw: 600
+- id: BV-21
+  name: CDU 2 supply isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: ball
+- id: FCV-2
+  name: CDU 2 flow control
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: control
+- id: BV-22
+  name: CDU 2 return isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: ball
+- id: CDU-3
+  name: CDU 3 600 kW
+  kind: cdu
+  domain: mechanical
+  container: HALL-1
+  attributes:
+    capacity_kw: 600
+- id: BV-31
+  name: CDU 3 supply isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: ball
+- id: FCV-3
+  name: CDU 3 flow control
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: control
+- id: BV-32
+  name: CDU 3 return isolation
+  kind: valve
+  domain: mechanical
+  container: PLANT
+  attributes:
+    valve_type: ball
+interfaces:
+- id: UTIL.OUT
+  asset: UTIL
+  name: OUT
+  domain: electrical
+  medium: ac_hv_3ph
+- id: RMU-1.IN
+  asset: RMU-1
+  name: IN
+  domain: electrical
+  medium: ac_hv_3ph
+- id: RMU-1.OUT-A
+  asset: RMU-1
+  name: OUT-A
+  domain: electrical
+  medium: ac_hv_3ph
+- id: TX-A.HV
+  asset: TX-A
+  name: HV
+  domain: electrical
+  medium: ac_hv_3ph
+- id: TX-A.LV
+  asset: TX-A
+  name: LV
+  domain: electrical
+  medium: ac_lv_3ph
+- id: ATS-A.N
+  asset: ATS-A
+  name: N
+  domain: electrical
+  medium: ac_lv_3ph
+- id: GEN-A.OUT
+  asset: GEN-A
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: ATS-A.E
+  asset: ATS-A
+  name: E
+  domain: electrical
+  medium: ac_lv_3ph
+- id: ATS-A.OUT
+  asset: ATS-A
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSB-A.IN
+  asset: MSB-A
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 2500
+    breaking_capacity_ka: 65
+- id: MSB-A.F-UPS
+  asset: MSB-A
+  name: F-UPS
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 1000
+    breaking_capacity_ka: 65
+- id: UPS-A.IN
+  asset: UPS-A
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: UPS-A.OUT
+  asset: UPS-A
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-A.IN
+  asset: CSB-A
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 800
+    breaking_capacity_ka: 50
+- id: MSB-A.F-MECH
+  asset: MSB-A
+  name: F-MECH
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 1000
+    breaking_capacity_ka: 65
+- id: MSSB-A.IN
+  asset: MSSB-A
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 1000
+    breaking_capacity_ka: 50
+- id: MSB-A.F-DB
+  asset: MSB-A
+  name: F-DB
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 160
+    breaking_capacity_ka: 50
+- id: DB-A.IN
+  asset: DB-A
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-A.F-PDU1
+  asset: CSB-A
+  name: F-PDU1
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: PDU-A1.IN
+  asset: PDU-A1
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-A.F-PDU2
+  asset: CSB-A
+  name: F-PDU2
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: PDU-A2.IN
+  asset: PDU-A2
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-A.F-PDU3
+  asset: CSB-A
+  name: F-PDU3
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: PDU-A3.IN
+  asset: PDU-A3
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: RMU-1.OUT-B
+  asset: RMU-1
+  name: OUT-B
+  domain: electrical
+  medium: ac_hv_3ph
+- id: TX-B.HV
+  asset: TX-B
+  name: HV
+  domain: electrical
+  medium: ac_hv_3ph
+- id: TX-B.LV
+  asset: TX-B
+  name: LV
+  domain: electrical
+  medium: ac_lv_3ph
+- id: ATS-B.N
+  asset: ATS-B
+  name: N
+  domain: electrical
+  medium: ac_lv_3ph
+- id: GEN-B.OUT
+  asset: GEN-B
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: ATS-B.E
+  asset: ATS-B
+  name: E
+  domain: electrical
+  medium: ac_lv_3ph
+- id: ATS-B.OUT
+  asset: ATS-B
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSB-B.IN
+  asset: MSB-B
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 2500
+    breaking_capacity_ka: 65
+- id: MSB-B.F-UPS
+  asset: MSB-B
+  name: F-UPS
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 1000
+    breaking_capacity_ka: 65
+- id: UPS-B.IN
+  asset: UPS-B
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: UPS-B.OUT
+  asset: UPS-B
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-B.IN
+  asset: CSB-B
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 800
+    breaking_capacity_ka: 50
+- id: MSB-B.F-MECH
+  asset: MSB-B
+  name: F-MECH
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 1000
+    breaking_capacity_ka: 65
+- id: MSSB-B.IN
+  asset: MSSB-B
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 1000
+    breaking_capacity_ka: 50
+- id: MSB-B.F-DB
+  asset: MSB-B
+  name: F-DB
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 160
+    breaking_capacity_ka: 50
+- id: DB-B.IN
+  asset: DB-B
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-B.F-PDU1
+  asset: CSB-B
+  name: F-PDU1
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: PDU-B1.IN
+  asset: PDU-B1
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-B.F-PDU2
+  asset: CSB-B
+  name: F-PDU2
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: PDU-B2.IN
+  asset: PDU-B2
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-B.F-PDU3
+  asset: CSB-B
+  name: F-PDU3
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: PDU-B3.IN
+  asset: PDU-B3
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSB-A.TIE
+  asset: MSB-A
+  name: TIE
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: acb
+    rating_a: 2500
+    breaking_capacity_ka: 65
+- id: MSB-B.TIE
+  asset: MSB-B
+  name: TIE
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-A.F-STS
+  asset: CSB-A
+  name: F-STS
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: STS-1.A
+  asset: STS-1
+  name: A
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CSB-B.F-STS
+  asset: CSB-B
+  name: F-STS
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 250
+    breaking_capacity_ka: 50
+- id: STS-1.B
+  asset: STS-1
+  name: B
+  domain: electrical
+  medium: ac_lv_3ph
+- id: STS-1.OUT
+  asset: STS-1
+  name: OUT
+  domain: electrical
+  medium: ac_lv_3ph
+- id: PDU-S1.IN
+  asset: PDU-S1
+  name: IN
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSSB-A.F-CH1
+  asset: MSSB-A
+  name: F-CH1
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 630
+    breaking_capacity_ka: 50
+- id: CH-1.PWR
+  asset: CH-1
+  name: PWR
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSSB-A.F-PMP1
+  asset: MSSB-A
+  name: F-PMP1
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 80
+    breaking_capacity_ka: 50
+- id: PMP-1.PWR
+  asset: PMP-1
+  name: PWR
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSSB-B.F-CH2
+  asset: MSSB-B
+  name: F-CH2
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 630
+    breaking_capacity_ka: 50
+- id: CH-2.PWR
+  asset: CH-2
+  name: PWR
+  domain: electrical
+  medium: ac_lv_3ph
+- id: MSSB-B.F-PMP2
+  asset: MSSB-B
+  name: F-PMP2
+  domain: electrical
+  medium: ac_lv_3ph
+  attributes:
+    device: mccb
+    rating_a: 80
+    breaking_capacity_ka: 50
+- id: PMP-2.PWR
+  asset: PMP-2
+  name: PWR
+  domain: electrical
+  medium: ac_lv_3ph
+- id: CH-1.CHWS
+  asset: CH-1
+  name: CHWS
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-101.A
+  asset: BFV-101
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-101.B
+  asset: BFV-101
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-S.IN1
+  asset: HDR-S
+  name: IN1
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-P.OUT1
+  asset: HDR-P
+  name: OUT1
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-102.A
+  asset: BFV-102
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-102.B
+  asset: BFV-102
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: STR-1.A
+  asset: STR-1
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: STR-1.B
+  asset: STR-1
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: PMP-1.SUC
+  asset: PMP-1
+  name: SUC
+  domain: mechanical
+  medium: pipe_flanged
+- id: PMP-1.DIS
+  asset: PMP-1
+  name: DIS
+  domain: mechanical
+  medium: pipe_flanged
+- id: NRV-1.A
+  asset: NRV-1
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: NRV-1.B
+  asset: NRV-1
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-103.A
+  asset: BFV-103
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-103.B
+  asset: BFV-103
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: CH-1.CHWR
+  asset: CH-1
+  name: CHWR
+  domain: mechanical
+  medium: pipe_flanged
+- id: CH-2.CHWS
+  asset: CH-2
+  name: CHWS
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-201.A
+  asset: BFV-201
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-201.B
+  asset: BFV-201
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-S.IN2
+  asset: HDR-S
+  name: IN2
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-P.OUT2
+  asset: HDR-P
+  name: OUT2
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-202.A
+  asset: BFV-202
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-202.B
+  asset: BFV-202
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: STR-2.A
+  asset: STR-2
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: STR-2.B
+  asset: STR-2
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: PMP-2.SUC
+  asset: PMP-2
+  name: SUC
+  domain: mechanical
+  medium: pipe_flanged
+- id: PMP-2.DIS
+  asset: PMP-2
+  name: DIS
+  domain: mechanical
+  medium: pipe_flanged
+- id: NRV-2.A
+  asset: NRV-2
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: NRV-2.B
+  asset: NRV-2
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-203.A
+  asset: BFV-203
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BFV-203.B
+  asset: BFV-203
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: CH-2.CHWR
+  asset: CH-2
+  name: CHWR
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-S.OUT1
+  asset: HDR-S
+  name: OUT1
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-11.A
+  asset: BV-11
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-11.B
+  asset: BV-11
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: CDU-1.PRI-S
+  asset: CDU-1
+  name: PRI-S
+  domain: mechanical
+  medium: pipe_flanged
+- id: CDU-1.PRI-R
+  asset: CDU-1
+  name: PRI-R
+  domain: mechanical
+  medium: pipe_flanged
+- id: FCV-1.A
+  asset: FCV-1
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: FCV-1.B
+  asset: FCV-1
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-12.A
+  asset: BV-12
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-12.B
+  asset: BV-12
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-R.IN1
+  asset: HDR-R
+  name: IN1
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-S.OUT2
+  asset: HDR-S
+  name: OUT2
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-21.A
+  asset: BV-21
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-21.B
+  asset: BV-21
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: CDU-2.PRI-S
+  asset: CDU-2
+  name: PRI-S
+  domain: mechanical
+  medium: pipe_flanged
+- id: CDU-2.PRI-R
+  asset: CDU-2
+  name: PRI-R
+  domain: mechanical
+  medium: pipe_flanged
+- id: FCV-2.A
+  asset: FCV-2
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: FCV-2.B
+  asset: FCV-2
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-22.A
+  asset: BV-22
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-22.B
+  asset: BV-22
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-R.IN2
+  asset: HDR-R
+  name: IN2
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-S.OUT3
+  asset: HDR-S
+  name: OUT3
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-31.A
+  asset: BV-31
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-31.B
+  asset: BV-31
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: CDU-3.PRI-S
+  asset: CDU-3
+  name: PRI-S
+  domain: mechanical
+  medium: pipe_flanged
+- id: CDU-3.PRI-R
+  asset: CDU-3
+  name: PRI-R
+  domain: mechanical
+  medium: pipe_flanged
+- id: FCV-3.A
+  asset: FCV-3
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: FCV-3.B
+  asset: FCV-3
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-32.A
+  asset: BV-32
+  name: A
+  domain: mechanical
+  medium: pipe_flanged
+- id: BV-32.B
+  asset: BV-32
+  name: B
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-R.IN3
+  asset: HDR-R
+  name: IN3
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-R.OUT
+  asset: HDR-R
+  name: OUT
+  domain: mechanical
+  medium: pipe_flanged
+- id: AS-1.IN
+  asset: AS-1
+  name: IN
+  domain: mechanical
+  medium: pipe_flanged
+- id: AS-1.OUT
+  asset: AS-1
+  name: OUT
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-P.IN
+  asset: HDR-P
+  name: IN
+  domain: mechanical
+  medium: pipe_flanged
+- id: AS-1.EXP
+  asset: AS-1
+  name: EXP
+  domain: mechanical
+  medium: pipe_flanged
+- id: EXP-1.IN
+  asset: EXP-1
+  name: IN
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-S.TT
+  asset: HDR-S
+  name: TT
+  domain: mechanical
+  medium: pipe_flanged
+- id: TT-101.PROC
+  asset: TT-101
+  name: PROC
+  domain: mechanical
+  medium: pipe_flanged
+- id: HDR-P.PT
+  asset: HDR-P
+  name: PT
+  domain: mechanical
+  medium: pipe_flanged
+- id: PT-102.PROC
+  asset: PT-102
+  name: PROC
+  domain: mechanical
+  medium: pipe_flanged
+- id: TT-101.AO
+  asset: TT-101
+  name: AO
+  domain: control
+  medium: ao_4_20mA
+- id: CSB-A.BMS
+  asset: CSB-A
+  name: BMS
+  domain: control
+  medium: ai_4_20mA
+connections:
+- id: C-HV-01
+  type: cable
+  from: UTIL.OUT
+  to: RMU-1.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 3
+    length_m: 120
+    method: buried
+- id: C-HV-A
+  type: cable
+  from: RMU-1.OUT-A
+  to: TX-A.HV
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 95
+    cores: 3
+    length_m: 25
+    method: buried
+- id: C-TX-A
+  type: cable
+  from: TX-A.LV
+  to: ATS-A.N
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 630
+    cores: 1
+    runs: 4
+    earth_mm2: 300
+    length_m: 30
+    method: ladder
+- id: C-GEN-A
+  type: cable
+  from: GEN-A.OUT
+  to: ATS-A.E
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 630
+    cores: 1
+    runs: 3
+    earth_mm2: 240
+    length_m: 45
+    method: ladder
+- id: C-MSB-A
+  type: cable
+  from: ATS-A.OUT
+  to: MSB-A.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 630
+    cores: 1
+    runs: 4
+    earth_mm2: 300
+    length_m: 8
+    method: ladder
+- id: C-UPS-A
+  type: cable
+  from: MSB-A.F-UPS
+  to: UPS-A.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 1
+    runs: 2
+    earth_mm2: 120
+    length_m: 15
+    method: ladder
+- id: C-CSB-A
+  type: cable
+  from: UPS-A.OUT
+  to: CSB-A.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 1
+    runs: 2
+    earth_mm2: 120
+    length_m: 12
+    method: ladder
+- id: C-MSSB-A
+  type: cable
+  from: MSB-A.F-MECH
+  to: MSSB-A.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 300
+    cores: 1
+    runs: 2
+    earth_mm2: 150
+    length_m: 60
+    method: ladder
+- id: C-DB-A
+  type: cable
+  from: MSB-A.F-DB
+  to: DB-A.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 70
+    cores: 4
+    earth_mm2: 25
+    length_m: 20
+    method: tray
+- id: C-PDU-A1
+  type: cable
+  from: CSB-A.F-PDU1
+  to: PDU-A1.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 48
+    method: tray
+- id: C-PDU-A2
+  type: cable
+  from: CSB-A.F-PDU2
+  to: PDU-A2.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 56
+    method: tray
+- id: C-PDU-A3
+  type: cable
+  from: CSB-A.F-PDU3
+  to: PDU-A3.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 64
+    method: tray
+- id: C-HV-B
+  type: cable
+  from: RMU-1.OUT-B
+  to: TX-B.HV
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 95
+    cores: 3
+    length_m: 25
+    method: buried
+- id: C-TX-B
+  type: cable
+  from: TX-B.LV
+  to: ATS-B.N
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 630
+    cores: 1
+    runs: 4
+    earth_mm2: 300
+    length_m: 30
+    method: ladder
+- id: C-GEN-B
+  type: cable
+  from: GEN-B.OUT
+  to: ATS-B.E
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 630
+    cores: 1
+    runs: 3
+    earth_mm2: 240
+    length_m: 45
+    method: ladder
+- id: C-MSB-B
+  type: cable
+  from: ATS-B.OUT
+  to: MSB-B.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 630
+    cores: 1
+    runs: 4
+    earth_mm2: 300
+    length_m: 8
+    method: ladder
+- id: C-UPS-B
+  type: cable
+  from: MSB-B.F-UPS
+  to: UPS-B.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 1
+    runs: 2
+    earth_mm2: 120
+    length_m: 15
+    method: ladder
+- id: C-CSB-B
+  type: cable
+  from: UPS-B.OUT
+  to: CSB-B.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 1
+    runs: 2
+    earth_mm2: 120
+    length_m: 12
+    method: ladder
+- id: C-MSSB-B
+  type: cable
+  from: MSB-B.F-MECH
+  to: MSSB-B.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 300
+    cores: 1
+    runs: 2
+    earth_mm2: 150
+    length_m: 60
+    method: ladder
+- id: C-DB-B
+  type: cable
+  from: MSB-B.F-DB
+  to: DB-B.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 70
+    cores: 4
+    earth_mm2: 25
+    length_m: 20
+    method: tray
+- id: C-PDU-B1
+  type: cable
+  from: CSB-B.F-PDU1
+  to: PDU-B1.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 48
+    method: tray
+- id: C-PDU-B2
+  type: cable
+  from: CSB-B.F-PDU2
+  to: PDU-B2.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 56
+    method: tray
+- id: C-PDU-B3
+  type: cable
+  from: CSB-B.F-PDU3
+  to: PDU-B3.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 64
+    method: tray
+- id: C-TIE
+  type: cable
+  from: MSB-A.TIE
+  to: MSB-B.TIE
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    tie: true
+    csa_mm2: 630
+    cores: 1
+    runs: 4
+    length_m: 6
+    method: busduct
+- id: C-STS-A
+  type: cable
+  from: CSB-A.F-STS
+  to: STS-1.A
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 35
+    method: tray
+- id: C-STS-B
+  type: cable
+  from: CSB-B.F-STS
+  to: STS-1.B
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 38
+    method: tray
+- id: C-PDU-S1
+  type: cable
+  from: STS-1.OUT
+  to: PDU-S1.IN
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 120
+    cores: 4
+    earth_mm2: 35
+    length_m: 6
+    method: tray
+- id: C-CH-1
+  type: cable
+  from: MSSB-A.F-CH1
+  to: CH-1.PWR
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 4
+    earth_mm2: 95
+    length_m: 25
+    method: ladder
+- id: C-PMP-1
+  type: cable
+  from: MSSB-A.F-PMP1
+  to: PMP-1.PWR
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 25
+    cores: 4
+    earth_mm2: 6
+    length_m: 18
+    method: tray
+- id: C-CH-2
+  type: cable
+  from: MSSB-B.F-CH2
+  to: CH-2.PWR
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 240
+    cores: 4
+    earth_mm2: 95
+    length_m: 25
+    method: ladder
+- id: C-PMP-2
+  type: cable
+  from: MSSB-B.F-PMP2
+  to: PMP-2.PWR
+  attributes:
+    conductor: Cu
+    insulation: XLPE
+    csa_mm2: 25
+    cores: 4
+    earth_mm2: 6
+    length_m: 18
+    method: tray
+- id: L-CH1S-1
+  type: pipe
+  from: CH-1.CHWS
+  to: BFV-101.A
+  attributes:
+    dn_mm: 200
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-CH1S-2
+  type: pipe
+  from: BFV-101.B
+  to: HDR-S.IN1
+  attributes:
+    dn_mm: 200
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-P1S-1
+  type: pipe
+  from: HDR-P.OUT1
+  to: BFV-102.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P1S-2
+  type: pipe
+  from: BFV-102.B
+  to: STR-1.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P1S-3
+  type: pipe
+  from: STR-1.B
+  to: PMP-1.SUC
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P1D-1
+  type: pipe
+  from: PMP-1.DIS
+  to: NRV-1.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P1D-2
+  type: pipe
+  from: NRV-1.B
+  to: BFV-103.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P1D-3
+  type: pipe
+  from: BFV-103.B
+  to: CH-1.CHWR
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-CH2S-1
+  type: pipe
+  from: CH-2.CHWS
+  to: BFV-201.A
+  attributes:
+    dn_mm: 200
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-CH2S-2
+  type: pipe
+  from: BFV-201.B
+  to: HDR-S.IN2
+  attributes:
+    dn_mm: 200
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-P2S-1
+  type: pipe
+  from: HDR-P.OUT2
+  to: BFV-202.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P2S-2
+  type: pipe
+  from: BFV-202.B
+  to: STR-2.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P2S-3
+  type: pipe
+  from: STR-2.B
+  to: PMP-2.SUC
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P2D-1
+  type: pipe
+  from: PMP-2.DIS
+  to: NRV-2.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P2D-2
+  type: pipe
+  from: NRV-2.B
+  to: BFV-203.A
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-P2D-3
+  type: pipe
+  from: BFV-203.B
+  to: CH-2.CHWR
+  attributes:
+    dn_mm: 200
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C1S-1
+  type: pipe
+  from: HDR-S.OUT1
+  to: BV-11.A
+  attributes:
+    dn_mm: 150
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-C1S-2
+  type: pipe
+  from: BV-11.B
+  to: CDU-1.PRI-S
+  attributes:
+    dn_mm: 150
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-C1R-1
+  type: pipe
+  from: CDU-1.PRI-R
+  to: FCV-1.A
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C1R-2
+  type: pipe
+  from: FCV-1.B
+  to: BV-12.A
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C1R-3
+  type: pipe
+  from: BV-12.B
+  to: HDR-R.IN1
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C2S-1
+  type: pipe
+  from: HDR-S.OUT2
+  to: BV-21.A
+  attributes:
+    dn_mm: 150
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-C2S-2
+  type: pipe
+  from: BV-21.B
+  to: CDU-2.PRI-S
+  attributes:
+    dn_mm: 150
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-C2R-1
+  type: pipe
+  from: CDU-2.PRI-R
+  to: FCV-2.A
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C2R-2
+  type: pipe
+  from: FCV-2.B
+  to: BV-22.A
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C2R-3
+  type: pipe
+  from: BV-22.B
+  to: HDR-R.IN2
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C3S-1
+  type: pipe
+  from: HDR-S.OUT3
+  to: BV-31.A
+  attributes:
+    dn_mm: 150
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-C3S-2
+  type: pipe
+  from: BV-31.B
+  to: CDU-3.PRI-S
+  attributes:
+    dn_mm: 150
+    service: CHWS
+    spec: CS-PN16
+    length_m: 4
+- id: L-C3R-1
+  type: pipe
+  from: CDU-3.PRI-R
+  to: FCV-3.A
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C3R-2
+  type: pipe
+  from: FCV-3.B
+  to: BV-32.A
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-C3R-3
+  type: pipe
+  from: BV-32.B
+  to: HDR-R.IN3
+  attributes:
+    dn_mm: 150
+    service: CHWR
+    spec: CS-PN16
+    length_m: 4
+- id: L-AS-1
+  type: pipe
+  from: HDR-R.OUT
+  to: AS-1.IN
+  attributes:
+    dn_mm: 250
+    service: CHWR
+    spec: CS-PN16
+    length_m: 3
+- id: L-AS-2
+  type: pipe
+  from: AS-1.OUT
+  to: HDR-P.IN
+  attributes:
+    dn_mm: 250
+    service: CHWR
+    spec: CS-PN16
+    length_m: 3
+- id: L-EXP
+  type: pipe
+  from: AS-1.EXP
+  to: EXP-1.IN
+  attributes:
+    dn_mm: 50
+    service: CHWR
+    spec: CS-PN16
+    length_m: 2
+- id: L-TT
+  type: pipe
+  from: HDR-S.TT
+  to: TT-101.PROC
+  attributes:
+    dn_mm: 25
+    service: CHWS
+    spec: CS-PN16
+    length_m: 1
+- id: L-PT
+  type: pipe
+  from: HDR-P.PT
+  to: PT-102.PROC
+  attributes:
+    dn_mm: 25
+    service: CHWR
+    spec: CS-PN16
+    length_m: 1
+- id: IO-TT-101
+  type: io_link
+  from: TT-101.AO
+  to: CSB-A.BMS

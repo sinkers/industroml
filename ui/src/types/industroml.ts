@@ -102,6 +102,7 @@ export interface Catalog {
   mediums: Record<Domain, string[]>;
   connectors: Array<{
     type: string;
+    connection_type?: 'cable' | 'pipe' | 'data_link' | 'io_link';
     label: string;
     color: string;
     attributes: string[];

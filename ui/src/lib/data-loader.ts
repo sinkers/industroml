@@ -281,7 +281,7 @@ export async function loadCatalog(): Promise<Catalog> {
     // Simplified catalog for demo
     const catalog: Catalog = {
       meta: {
-        format: 'IndustrialML-Catalog',
+        format: 'IndustroML-Catalog',
         version: '0.1',
         notes: 'Simplified catalog for demo'
       },
